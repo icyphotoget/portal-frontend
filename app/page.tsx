@@ -1,16 +1,9 @@
 // app/page.tsx
 import Link from "next/link";
 import BottomNav from "@/app/components/BottomNav";
+import TopNav, { Category } from "@/app/components/TopNav";
 
 type StrapiMedia = any;
-
-type Category = {
-  id: number;
-  documentId?: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-};
 
 type Article = {
   id: number;
@@ -99,33 +92,6 @@ async function fetchHomeData(baseUrl: string) {
   };
 }
 
-function Pill({
-  children,
-  active,
-  href,
-}: {
-  children: React.ReactNode;
-  active?: boolean;
-  href?: string;
-}) {
-  const cls = [
-    "inline-flex items-center rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wide transition",
-    active
-      ? "bg-cyan-400 text-black"
-      : "border border-zinc-700 text-white hover:bg-zinc-900",
-  ].join(" ");
-
-  if (href) {
-    return (
-      <Link href={href} className={cls}>
-        {children}
-      </Link>
-    );
-  }
-
-  return <span className={cls}>{children}</span>;
-}
-
 function CategoryBadge({ cat }: { cat: Category | null }) {
   const label = cat?.name ?? "News";
   return (
@@ -190,77 +156,11 @@ export default async function HomePage() {
         <div className="absolute -bottom-56 right-[-160px] h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[160px]" />
       </div>
 
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 bg-black/85 backdrop-blur">
-        <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
-          <div className="relative flex h-16 items-center border-b border-zinc-800">
-            {/* Left */}
-            <div className="flex flex-1 items-center gap-3">
-              <Link
-                href="/news"
-                className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-zinc-900 transition"
-              >
-                News
-              </Link>
-            </div>
-
-            {/* Center (LOGO) */}
-            <div className="absolute left-1/2 -translate-x-1/2">
-              <Link href="/" className="flex items-center justify-center">
-                <img
-  src="/logo-fullport.png"
-  alt="FullPort"
-  className="h-7 sm:h-8 md:h-9 object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
-  draggable={false}
-/>
-              </Link>
-            </div>
-
-            {/* Right */}
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
-
-              <Link
-                href="/news"
-                className="rounded-full p-2 hover:bg-zinc-900 transition"
-                aria-label="Open menu"
-                title="Open"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </Link>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex items-center gap-2 py-4">
-            <Pill active href="/">
-              Top Stories
-            </Pill>
-            <Pill href="/news?tab=following">Following</Pill>
-
-            {categories.slice(0, 3).map((c) => (
-              <Pill key={c.id} href={`/category/${c.slug}`}>
-                {c.name}
-              </Pill>
-            ))}
-          </div>
-        </div>
-      </nav>
+      {/* ✅ Extracted TopNav */}
+      <TopNav categories={categories} activeTab="top" />
 
       <div className="relative mx-auto max-w-[1440px] px-4 lg:px-8 py-8">
-        {/* ✅ HERO (mobile-first, čitko, bez overlapa) */}
+        {/* ✅ HERO */}
         {hero ? (
           <section className="mb-10">
             <Link
@@ -281,7 +181,7 @@ export default async function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-zinc-900 to-black" />
                   )}
 
-                  {/* overlay za čitljivost */}
+                  {/* overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
 
                   {/* top meta */}
@@ -324,7 +224,6 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  {/* little fade on bottom */}
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/35 to-transparent" />
                 </div>
               </div>
@@ -332,7 +231,7 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* Two-column on desktop: Top Stories + Most Popular */}
+        {/* Top Stories + Most Popular */}
         <section className="mb-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
           {/* Top Stories */}
           <div>
@@ -354,12 +253,10 @@ export default async function HomePage() {
                     href={`/news/${article.slug}`}
                     className="group flex gap-4 border-b border-zinc-800 pb-6 last:border-0 no-underline !text-zinc-50"
                   >
-                    {/* Number badge */}
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-lg font-extrabold text-cyan-300">
                       {idx + 1}
                     </div>
 
-                    {/* Thumb */}
                     <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-900">
                       {coverUrl ? (
                         <img
@@ -374,7 +271,6 @@ export default async function HomePage() {
                       )}
                     </div>
 
-                    {/* Text */}
                     <div className="min-w-0 flex-1">
                       <h3 className="text-xl font-extrabold leading-tight mb-2 text-zinc-50 transition group-hover:opacity-90 line-clamp-3">
                         {article.title}
