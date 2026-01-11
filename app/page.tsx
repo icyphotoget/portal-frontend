@@ -2,6 +2,7 @@
 import Link from "next/link";
 import FeaturedCarousel, { FeaturedItem } from "@/app/components/FeaturedCarousel";
 import BottomNav from "@/app/components/BottomNav";
+import AuthGate from "@/app/components/AuthGate";
 
 type StrapiMedia = any;
 
@@ -325,6 +326,9 @@ export default async function HomePage() {
             >
               News
             </Link>
+
+            {/* ✅ Auth buttons */}
+            <AuthGate />
           </div>
         </div>
 
@@ -354,6 +358,14 @@ export default async function HomePage() {
                 >
                   Browse Latest
                 </Link>
+
+                <Link
+                  href="/login"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900/55 transition"
+                >
+                  Log in to comment
+                </Link>
+
                 <Link
                   href="/sitemap.xml"
                   className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900/55 transition"
