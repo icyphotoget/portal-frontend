@@ -1,49 +1,13 @@
-// app/components/TopNav.tsx
 import Link from "next/link";
 import MobileMenu from "@/app/components/MobileMenu";
 
-export type Category = {
+type Category = {
   id: number;
-  documentId?: string;
   name: string;
   slug: string;
-  description?: string | null;
 };
 
-function Pill({
-  children,
-  active,
-  href,
-}: {
-  children: React.ReactNode;
-  active?: boolean;
-  href?: string;
-}) {
-  const cls = [
-    "inline-flex items-center rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wide transition",
-    active
-      ? "bg-cyan-400 text-black"
-      : "border border-zinc-700 text-white hover:bg-zinc-900",
-  ].join(" ");
-
-  if (href) {
-    return (
-      <Link href={href} className={cls}>
-        {children}
-      </Link>
-    );
-  }
-
-  return <span className={cls}>{children}</span>;
-}
-
-export default function TopNav({
-  categories,
-  activeTab = "top",
-}: {
-  categories: Category[];
-  activeTab?: "top" | "following";
-}) {
+export default function TopNav({ categories }: { categories: Category[] }) {
   return (
     <nav className="sticky top-0 z-50 bg-black/85 backdrop-blur">
       <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
@@ -58,47 +22,47 @@ export default function TopNav({
             </Link>
           </div>
 
-          {/* Center (Logo) */}
+          {/* Center logo */}
           <div className="absolute left-1/2 -translate-x-1/2">
-            <Link href="/" className="flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-2">
               <img
                 src="/logo-fullport.png"
                 alt="FullPort"
-                className="h-7 sm:h-8 object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
-                draggable={false}
+                className="h-5 w-auto"
               />
             </Link>
           </div>
 
-          {/* Right */}
-          <div className="flex flex-1 items-center justify-end gap-2">
-            <Link
-              href="/login"
-              className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-            >
-              Log in
-            </Link>
-
-            {/* ✅ MobileMenu is client component */}
+          {/* Right – ONLY menu */}
+          <div className="flex flex-1 items-center justify-end">
             <MobileMenu categories={categories} />
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex items-center gap-2 py-4">
-          <Pill active={activeTab === "top"} href="/">
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-full bg-cyan-400 px-5 py-2 text-xs font-bold uppercase tracking-wide text-black"
+          >
             Top Stories
-          </Pill>
+          </Link>
 
-          <Pill active={activeTab === "following"} href="/news?tab=following">
+          <Link
+            href="/news?tab=following"
+            className="inline-flex items-center rounded-full border border-zinc-700 px-5 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-zinc-900 transition"
+          >
             Following
-          </Pill>
+          </Link>
 
-          {/* Optional: show up to 3 categories as quick chips */}
           {categories.slice(0, 3).map((c) => (
-            <Pill key={c.id} href={`/category/${c.slug}`}>
+            <Link
+              key={c.id}
+              href={`/category/${c.slug}`}
+              className="inline-flex items-center rounded-full border border-zinc-700 px-5 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-zinc-900 transition"
+            >
               {c.name}
-            </Pill>
+            </Link>
           ))}
         </div>
       </div>
