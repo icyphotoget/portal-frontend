@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Category } from "@/app/components/TopNav";
+import MenuAuthHeader from "@/app/components/MenuAuthHeader";
 
 function Plus({ open }: { open: boolean }) {
   return (
@@ -100,15 +101,8 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
 
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-              <div className="flex items-center gap-3 text-sm font-semibold">
-                <Link href="/login" onClick={close} className="text-white/90 hover:text-white">
-                  Login
-                </Link>
-                <span className="text-white/30">/</span>
-                <Link href="/signup" onClick={close} className="text-white/90 hover:text-white">
-                  Sign Up
-                </Link>
-              </div>
+              {/* ✅ dynamic auth */}
+              <MenuAuthHeader onClose={close} />
 
               <button
                 onClick={close}
@@ -135,7 +129,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
@@ -215,11 +209,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
 
                 {/* About */}
                 <div className="rounded-2xl border border-white/10 bg-white/5">
-                  <Link
-                    href="/about"
-                    onClick={close}
-                    className="flex items-center justify-between px-4 py-3"
-                  >
+                  <Link href="/about" onClick={close} className="flex items-center justify-between px-4 py-3">
                     <span className="text-base font-extrabold text-white">About</span>
                     <Plus open={false} />
                   </Link>
@@ -246,15 +236,8 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
               {/* Header */}
               <div className="sticky top-0 z-10 border-b border-white/10 bg-zinc-950/95 backdrop-blur">
                 <div className="flex items-center justify-between px-4 py-4">
-                  <div className="flex items-center gap-3 text-sm font-semibold">
-                    <Link href="/login" onClick={close} className="text-white/90 hover:text-white">
-                      Login
-                    </Link>
-                    <span className="text-white/30">/</span>
-                    <Link href="/signup" onClick={close} className="text-white/90 hover:text-white">
-                      Sign Up
-                    </Link>
-                  </div>
+                  {/* ✅ dynamic auth */}
+                  <MenuAuthHeader onClose={close} />
 
                   <button
                     onClick={close}
@@ -298,9 +281,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
                           onClick={() => toggleSection(c.slug)}
                           className="flex w-full items-center justify-between px-4 py-4 text-left"
                         >
-                          <span className="text-[20px] font-extrabold tracking-tight text-white">
-                            {c.name}
-                          </span>
+                          <span className="text-[20px] font-extrabold tracking-tight text-white">{c.name}</span>
                           <Plus open={isExpanded} />
                         </button>
 
@@ -341,9 +322,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
                           onClick={() => toggleSection(sec.key)}
                           className="flex w-full items-center justify-between px-4 py-4 text-left"
                         >
-                          <span className="text-[20px] font-extrabold tracking-tight text-white">
-                            {sec.label}
-                          </span>
+                          <span className="text-[20px] font-extrabold tracking-tight text-white">{sec.label}</span>
                           <Plus open={isExpanded} />
                         </button>
 
@@ -363,14 +342,8 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
                   })}
 
                   <div className="rounded-2xl border border-white/10 bg-zinc-900/60">
-                    <Link
-                      href="/about"
-                      onClick={close}
-                      className="flex items-center justify-between px-4 py-4"
-                    >
-                      <span className="text-[20px] font-extrabold tracking-tight text-white">
-                        About
-                      </span>
+                    <Link href="/about" onClick={close} className="flex items-center justify-between px-4 py-4">
+                      <span className="text-[20px] font-extrabold tracking-tight text-white">About</span>
                       <Plus open={false} />
                     </Link>
                   </div>

@@ -1,5 +1,4 @@
 // app/components/TopNav.tsx
-
 import Link from "next/link";
 import MobileMenu from "@/app/components/MobileMenu";
 
@@ -9,11 +8,7 @@ export type Category = {
   slug: string;
 };
 
-export default function TopNav({
-  categories,
-}: {
-  categories: Category[];
-}) {
+export default function TopNav({ categories }: { categories: Category[] }) {
   return (
     <nav className="sticky top-0 z-50 bg-black/85 backdrop-blur">
       <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
@@ -39,7 +34,7 @@ export default function TopNav({
             </Link>
           </div>
 
-          {/* Right */}
+          {/* Right → ONLY MENU BUTTON */}
           <div className="flex flex-1 items-center justify-end">
             <MobileMenu categories={categories} />
           </div>
