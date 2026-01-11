@@ -1,17 +1,18 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://your-domain.com"), // CHANGE IN PROD
+  // ✅ promijeni u produkciji
+  metadataBase: new URL("https://fullportlabs.com"),
 
   title: {
-    default: "Crypto Portal",
-    template: "%s | Crypto Portal",
+    default: "FullPort",
+    template: "%s | FullPort",
   },
 
-  description:
-    "Latest crypto news, market insights, Bitcoin, Ethereum, and blockchain trends.",
+  description: "Breaking crypto headlines, memecoins, and on-chain stories.",
 
   keywords: [
     "crypto",
@@ -21,11 +22,13 @@ export const metadata: Metadata = {
     "web3",
     "altcoins",
     "crypto news",
+    "memecoins",
+    "on-chain",
   ],
 
-  authors: [{ name: "Crypto Portal" }],
-  creator: "Crypto Portal",
-  publisher: "Crypto Portal",
+  authors: [{ name: "FullPort" }],
+  creator: "FullPort",
+  publisher: "FullPort",
 
   robots: {
     index: true,
@@ -42,28 +45,26 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://your-domain.com",
-    siteName: "Crypto Portal",
-    title: "Crypto Portal",
-    description:
-      "Latest crypto news, market insights, Bitcoin, Ethereum, and blockchain trends.",
+    url: "https://fullportlabs.com",
+    siteName: "FullPort",
+    title: "FullPort",
+    description: "Breaking crypto headlines, memecoins, and on-chain stories.",
     images: [
       {
-        url: "/og-home.jpg", // put this in /public
+        url: "/og-home.jpg", // /public/og-home.jpg
         width: 1200,
         height: 630,
-        alt: "Crypto Portal – Crypto News & Insights",
+        alt: "FullPort — Crypto News & Insights",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Crypto Portal",
-    description:
-      "Latest crypto news, market insights, Bitcoin, Ethereum, and blockchain trends.",
+    title: "FullPort",
+    description: "Breaking crypto headlines, memecoins, and on-chain stories.",
     images: ["/og-home.jpg"],
-    creator: "@yourtwitter", // optional
+    // creator: "@yourtwitter", // opcionalno
   },
 
   icons: {
@@ -73,7 +74,6 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ themeColor belongs in viewport (App Router)
 export const viewport: Viewport = {
   themeColor: "#000000",
 };
@@ -85,7 +85,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
