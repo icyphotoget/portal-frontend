@@ -184,7 +184,7 @@ export default function FeaturedCarousel({
             <Link
               key={a.id}
               href={`/news/${a.slug}`}
-              className="snap-center min-w-[88%] sm:min-w-[78%] lg:min-w-[56%]
+              className="snap-center min-w-[92%] sm:min-w-[78%] lg:min-w-[56%]
                          overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-900/20"
             >
               <div className="relative aspect-[16/10] bg-zinc-900">
@@ -198,7 +198,7 @@ export default function FeaturedCarousel({
                   />
                 ) : (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900" />
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900" />
                     <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-white/6 blur-3xl" />
                     <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
                   </>
@@ -258,14 +258,13 @@ export default function FeaturedCarousel({
                 aria-label={`Go to slide ${i + 1}`}
                 onClick={() => setActive(i)}
                 className={[
-                  "h-2 w-2 rounded-full transition",
+                  "h-2.5 w-2.5 rounded-full transition",
                   i === active ? "bg-zinc-100" : "bg-zinc-700 hover:bg-zinc-600",
                 ].join(" ")}
               />
             ))}
           </div>
 
-          {/* keyframes via <style> in markup is OK, but let's keep it minimal */}
           <style>{`
             @keyframes fpProgress {
               from { transform: scaleX(0); }

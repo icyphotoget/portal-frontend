@@ -1,30 +1,43 @@
+// app/components/BottomNav.tsx
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const nav = [
+  { href: "/", label: "Home", icon: "⌂" },
+  { href: "/news", label: "News", icon: "≋" },
+  { href: "/sitemap.xml", label: "Map", icon: "⌁" },
+];
 
 export default function BottomNav() {
-  return (
-    <>
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[92%] -translate-x-1/2 lg:hidden">
-        <div className="rounded-[1.6rem] border border-zinc-800 bg-zinc-950/80 backdrop-blur px-4 py-3 flex items-center justify-around shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
-          <Link
-            href="/"
-            className="rounded-2xl bg-white text-zinc-950 px-4 py-2 text-sm font-medium"
-          >
-            Home
-          </Link>
-          <Link href="/news" className="px-4 py-2 text-sm text-zinc-200">
-            News
-          </Link>
-          <Link href="/categories" className="px-4 py-2 text-sm text-zinc-200">
-            Topics
-          </Link>
-          <Link href="/sitemap.xml" className="px-4 py-2 text-sm text-zinc-200">
-            Map
-          </Link>
-        </div>
-      </nav>
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
 
-      {/* Spacer da nav ne prekriva content */}
-      <div className="h-24 lg:hidden" />
-    </>
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center pb-4">
+      <div
+        className="mx-4 w-full max-w-md rounded-[1.8rem] border border-zinc-800 bg-zinc-950/70
+                   px-2 py-2 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur"
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {nav.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className={[
+                "flex items-center justify-center gap-2 rounded-[1.2rem] px-3 py-2 text-sm transition",
+                isActive(n.href)
+                  ? "bg-zinc-100 text-zinc-950"
+                  : "text-zinc-200 hover:bg-zinc-900/60",
+              ].join(" ")}
+            >
+              <span className="text-base">{n.icon}</span>
+              <span>{n.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
