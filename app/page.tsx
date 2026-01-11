@@ -1,5 +1,4 @@
 // app/page.tsx
-
 import BottomNav from "@/app/components/BottomNav";
 import TopNav, { Category } from "@/app/components/TopNav";
 
@@ -11,6 +10,7 @@ import HowToSection from "@/app/components/HowToSection";
 
 import PumpfunSection from "@/app/components/PumpfunSection";
 import BonkfunSection from "@/app/components/BonkfunSection";
+import EditorsPickSection from "@/app/components/EditorsPickSection";
 
 import { fetchHomeData, firstCoverUrl, type Article } from "@/app/lib/strapi";
 
@@ -74,8 +74,7 @@ export default async function HomePage() {
       <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-7xl px-4 py-10">
           <p className="text-zinc-400">
-            Missing{" "}
-            <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
+            Missing <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
           </p>
         </div>
       </main>
@@ -120,7 +119,7 @@ export default async function HomePage() {
     needles: ["pumpfun", "pump.fun", "pump fun", "memecoin", "memecoins", "launchpad"],
   });
 
-  // 2) Bonkfun bucket (✅ replaces TECH)
+  // 2) Bonkfun bucket
   const bonkfun = buildBucket({
     categories,
     allArticles: articles,
@@ -128,7 +127,24 @@ export default async function HomePage() {
     needles: ["bonkfun", "bonk fun", "bonk", "memecoin", "memecoins"],
   });
 
-  // 3) HowTo bucket
+  // 3) Editor's Pick bucket (NEW)
+  const editorsPick = buildBucket({
+    categories,
+    allArticles: articles,
+    heroFallback: hero,
+    needles: [
+      "editor",
+      "editors",
+      "editor's pick",
+      "editors pick",
+      "featured",
+      "staff pick",
+      "staff picks",
+      "recommended",
+    ],
+  });
+
+  // 4) HowTo bucket
   const howto = buildBucket({
     categories,
     allArticles: articles,
@@ -182,7 +198,7 @@ export default async function HomePage() {
           <MostPopularCard articles={mostPopular} />
         </section>
 
-        {/* 4) BONKFUN (✅ replaces TECH section) */}
+        {/* 4) BONKFUN */}
         {bonkfun.featured ? (
           <section className="mb-12">
             <BonkfunSection
@@ -207,7 +223,32 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* 5) HOW TO */}
+        {/* 5) EDITOR'S PICK (NEW) */}
+        {editorsPick.featured ? (
+          <section className="mb-12">
+            <EditorsPickSection
+              label="EDITOR'S PICK"
+              seeAllHref={editorsPick.seeAllHref}
+              featured={{
+                title: editorsPick.featured.title,
+                href: `/news/${editorsPick.featured.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(editorsPick.featured.publishedAt),
+                imageUrl: editorsPick.imageUrl,
+                imageAlt: editorsPick.featured.title,
+              }}
+              items={editorsPick.list.map((a) => ({
+                id: a.id,
+                title: a.title,
+                href: `/news/${a.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(a.publishedAt),
+              }))}
+            />
+          </section>
+        ) : null}
+
+        {/* 6) HOW TO */}
         {howto.featured ? (
           <section className="mb-12">
             <HowToSection
@@ -233,7 +274,7 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* 6) LATEST (everything else) */}
+        {/* 7) LATEST */}
         <LatestFeed articles={latestFeed} />
       </div>
 
