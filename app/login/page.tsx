@@ -2,18 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 export default function LoginPage() {
   const supabase = useMemo(() => createSupabaseBrowser(), []);
   const router = useRouter();
+  const sp = useSearchParams();
+  const next = sp.get("next") || "/";
 
-  const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string>("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<null | "google" | "twitter">(null);
 
-  // Shared button styles (visible hover + pointer + focus)
   const btnBase =
     "w-full rounded-2xl px-4 py-3 text-sm font-medium transition will-change-transform " +
     "cursor-pointer select-none " +
@@ -25,55 +25,30 @@ export default function LoginPage() {
     let alive = true;
     supabase.auth.getUser().then(({ data }) => {
       if (!alive) return;
-      if (data.user) router.replace("/");
+      if (data.user) router.replace(next);
     });
     return () => {
       alive = false;
     };
-  }, [supabase, router]);
+  }, [supabase, router, next]);
 
-  async function loginWithGoogle() {
+  async function signIn(provider: "google" | "twitter") {
     setMessage("");
-    setBusy(true);
+    setBusy(provider);
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          // IMPORTANT: keep next so you can go back to /profile etc.
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
+
       if (error) setMessage(error.message);
     } finally {
-      setBusy(false);
-    }
-  }
-
-  async function loginWithEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setMessage("");
-
-    const cleanEmail = email.trim();
-    if (!cleanEmail) {
-      setMessage("Please enter your email address.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        setMessage(error.message);
-      } else {
-        setMessage("Check your email for the login link.");
-      }
-    } finally {
-      setBusy(false);
+      // usually page redirects, but if popup blocked / error, we reset state
+      setBusy(null);
     }
   }
 
@@ -104,13 +79,13 @@ export default function LoginPage() {
           <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900/20 p-6 shadow-[0_0_120px_rgba(255,255,255,0.06)] backdrop-blur">
             <h1 className="text-3xl font-semibold tracking-tight">Log in</h1>
             <p className="mt-2 text-sm text-zinc-400">
-              Log in to comment on articles and join the discussion.
+              Log in to comment on articles and customize your profile.
             </p>
 
             {/* Google */}
             <button
-              onClick={loginWithGoogle}
-              disabled={busy}
+              onClick={() => signIn("google")}
+              disabled={!!busy}
               className={
                 btnBase +
                 " mt-6 bg-zinc-100 text-zinc-950 " +
@@ -118,41 +93,22 @@ export default function LoginPage() {
                 "active:translate-y-0 active:scale-[0.99]"
               }
             >
-              {busy ? "Redirecting…" : "Continue with Google"}
+              {busy === "google" ? "Opening Google…" : "Continue with Google"}
             </button>
 
-            {/* Divider */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-zinc-800" />
-              <span className="text-xs text-zinc-500">or</span>
-              <div className="h-px flex-1 bg-zinc-800" />
-            </div>
-
-            {/* Email login */}
-            <form onSubmit={loginWithEmail} className="space-y-3">
-              <label className="block text-xs text-zinc-400">Log in with email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@domain.com"
-                autoComplete="email"
-                className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm outline-none
-                           transition focus:border-zinc-700 focus:ring-2 focus:ring-white/15"
-              />
-
-              <button
-                disabled={busy}
-                className={
-                  btnBase +
-                  " border border-zinc-800 bg-zinc-950 text-zinc-200 " +
-                  "hover:bg-zinc-900 hover:border-zinc-700 hover:-translate-y-[1px] hover:shadow-[0_14px_50px_rgba(0,0,0,0.45)] " +
-                  "active:translate-y-0 active:scale-[0.99]"
-                }
-              >
-                {busy ? "Sending…" : "Send login link"}
-              </button>
-            </form>
+            {/* X (Twitter) */}
+            <button
+              onClick={() => signIn("twitter")}
+              disabled={!!busy}
+              className={
+                btnBase +
+                " mt-3 border border-zinc-800 bg-zinc-950 text-zinc-100 " +
+                "hover:bg-zinc-900 hover:border-zinc-700 hover:-translate-y-[1px] hover:shadow-[0_14px_50px_rgba(0,0,0,0.45)] " +
+                "active:translate-y-0 active:scale-[0.99]"
+              }
+            >
+              {busy === "twitter" ? "Opening X…" : "Continue with X"}
+            </button>
 
             {/* Feedback */}
             {message ? (
