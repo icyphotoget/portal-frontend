@@ -1,15 +1,17 @@
-// app/auth/callback/route.ts
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/app/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const next = url.searchParams.get("next") || "/";
 
   if (code) {
     const supabase = await createSupabaseServer();
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(new URL("/", origin));
+  // always go back to site origin
+  const origin = url.origin;
+  return NextResponse.redirect(new URL(next, origin));
 }

@@ -13,6 +13,13 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
+  // Shared button styles (visible hover + pointer + focus)
+  const btnBase =
+    "w-full rounded-2xl px-4 py-3 text-sm font-medium transition will-change-transform " +
+    "cursor-pointer select-none " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 " +
+    "disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none";
+
   // Redirect if already logged in
   useEffect(() => {
     let alive = true;
@@ -87,7 +94,7 @@ export default function LoginPage() {
             </Link>
             <Link
               href="/"
-              className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-900 transition"
             >
               Home
             </Link>
@@ -104,8 +111,12 @@ export default function LoginPage() {
             <button
               onClick={loginWithGoogle}
               disabled={busy}
-              className="mt-6 w-full rounded-2xl bg-zinc-100 px-4 py-3 text-sm font-medium text-zinc-950
-                         hover:bg-white disabled:opacity-60"
+              className={
+                btnBase +
+                " mt-6 bg-zinc-100 text-zinc-950 " +
+                "hover:bg-white hover:-translate-y-[1px] hover:shadow-[0_14px_50px_rgba(255,255,255,0.12)] " +
+                "active:translate-y-0 active:scale-[0.99]"
+              }
             >
               {busy ? "Redirecting…" : "Continue with Google"}
             </button>
@@ -119,9 +130,7 @@ export default function LoginPage() {
 
             {/* Email login */}
             <form onSubmit={loginWithEmail} className="space-y-3">
-              <label className="block text-xs text-zinc-400">
-                Log in with email
-              </label>
+              <label className="block text-xs text-zinc-400">Log in with email</label>
               <input
                 type="email"
                 value={email}
@@ -129,12 +138,17 @@ export default function LoginPage() {
                 placeholder="email@domain.com"
                 autoComplete="email"
                 className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm outline-none
-                           focus:border-zinc-700"
+                           transition focus:border-zinc-700 focus:ring-2 focus:ring-white/15"
               />
+
               <button
                 disabled={busy}
-                className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-200
-                           hover:bg-zinc-900 disabled:opacity-60"
+                className={
+                  btnBase +
+                  " border border-zinc-800 bg-zinc-950 text-zinc-200 " +
+                  "hover:bg-zinc-900 hover:border-zinc-700 hover:-translate-y-[1px] hover:shadow-[0_14px_50px_rgba(0,0,0,0.45)] " +
+                  "active:translate-y-0 active:scale-[0.99]"
+                }
               >
                 {busy ? "Sending…" : "Send login link"}
               </button>
