@@ -5,76 +5,128 @@ import type { Category } from "@/app/components/TopNav";
 import type { Article } from "@/app/lib/strapi";
 import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi";
 
-function CategoryBadge({ cat }: { cat: Category | null }) {
+function CategoryPill({ cat }: { cat: Category | null }) {
   const label = cat?.name ?? "News";
   return (
-    <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+    <span className="inline-flex items-center rounded-full bg-black/60 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white ring-1 ring-white/10 backdrop-blur">
       {label}
     </span>
   );
 }
 
+function PlayButton() {
+  return (
+    <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-300 text-black shadow-lg ring-1 ring-black/10">
+        <svg viewBox="0 0 24 24" className="h-6 w-6 translate-x-[1px]" fill="currentColor">
+          <path d="M8 5v14l11-7-11-7z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Verge-like underline highlight:
+ * Wrap each line in <span className="hero-hl">...</span>.
+ */
+function HighlightTitle({ title }: { title: string }) {
+  // jednostavno: jedan span (radi super na line-wrapu)
+  return (
+    <span className="relative inline">
+      <span
+        className={[
+          "absolute left-0 right-0",
+          "bottom-[0.08em] sm:bottom-[0.10em]",
+          "h-[0.28em] sm:h-[0.30em]",
+          "bg-violet-600/90",
+          "-z-10",
+        ].join(" ")}
+      />
+      {title}
+    </span>
+  );
+}
+
 export default function HeroCard({ hero }: { hero: Article }) {
-  const heroCover = firstCoverUrl(hero);
-  const heroCat = getArticleCategory(hero);
+  const cover = firstCoverUrl(hero);
+  const cat = getArticleCategory(hero);
+
+  // ako imaš author/comments u Strapi, ovdje kasnije spoji realne podatke
+  const author = "FULLPORT";
+  const date = formatDate(hero.publishedAt);
 
   return (
     <section className="mb-10">
-      <Link href={`/news/${hero.slug}`} className="group block no-underline !text-zinc-50">
+      <Link href={`/news/${hero.slug}`} className="group block no-underline">
         <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
-          <div className="relative min-h-[340px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden">
-            {heroCover ? (
+          {/* Media */}
+          <div className="relative min-h-[360px] sm:min-h-[520px] lg:min-h-[620px]">
+            {cover ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={heroCover}
+                src={cover}
                 alt={hero.title}
                 className="absolute inset-0 h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-zinc-900 to-black" />
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black" />
             )}
 
-            {/* overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+            {/* Bottom fade like Verge */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/5" />
 
-            {/* top meta */}
-            <div className="absolute left-0 right-0 top-0 p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <CategoryBadge cat={heroCat} />
-                <span className="text-xs text-white/75">{formatDate(hero.publishedAt)}</span>
-              </div>
+            {/* Top-left meta pills */}
+            <div className="absolute left-4 top-4 sm:left-6 sm:top-6 flex items-center gap-3">
+              <CategoryPill cat={cat} />
+              {date ? <span className="text-xs font-bold uppercase tracking-wide text-white/70">{date}</span> : null}
             </div>
 
-            {/* bottom content */}
-            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
-              <div className="rounded-2xl border border-white/10 bg-black/40 p-4 sm:bg-black/45 sm:p-6 sm:backdrop-blur-xl">
+            {/* Play button (top-right) */}
+            <PlayButton />
+
+            {/* Bottom content */}
+            <div className="absolute inset-x-0 bottom-0 px-4 pb-5 sm:px-6 sm:pb-7 lg:px-8 lg:pb-8">
+              <div className="max-w-[980px]">
                 <h1
                   className={[
-                    "font-extrabold leading-[1.05] tracking-[-0.02em]",
-                    "text-[1.65rem] sm:text-[2.2rem] lg:text-[2.8rem]",
-                    "text-zinc-50 transition group-hover:opacity-90",
-                    "line-clamp-2 sm:line-clamp-3",
+                    "text-white font-black tracking-tight",
+                    "text-[2.1rem] leading-[1.03]",
+                    "sm:text-[3.0rem] sm:leading-[1.02]",
+                    "lg:text-[3.6rem]",
+                    "drop-shadow-[0_10px_30px_rgba(0,0,0,0.55)]",
+                    "group-hover:opacity-95 transition",
                   ].join(" ")}
-                  style={{ textShadow: "0 2px 18px rgba(0,0,0,0.85)" }}
                 >
-                  {hero.title}
+                  <HighlightTitle title={hero.title} />
                 </h1>
 
                 {hero.excerpt ? (
-                  <p className="mt-2 text-sm sm:text-base text-zinc-200/85 leading-relaxed line-clamp-2 sm:line-clamp-3">
+                  <p className="mt-3 max-w-[760px] text-sm sm:text-base text-white/85 leading-relaxed">
                     {hero.excerpt}
                   </p>
                 ) : null}
 
-                <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/90">
-                  Open story
-                  <span className="translate-x-0 transition group-hover:translate-x-1">→</span>
+                {/* Meta row */}
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/70">
+                  <span className="text-cyan-300">{author}</span>
+                  {date ? <span>{date}</span> : null}
+                  <span className="inline-flex items-center gap-2">
+                    <span className="opacity-70">•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                      </svg>
+                      <span>30</span>
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
 
+            {/* Tiny bottom edge fade */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/35 to-transparent" />
           </div>
         </div>

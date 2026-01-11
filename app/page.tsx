@@ -9,19 +9,61 @@ import MostPopularCard from "@/app/components/MostPopularCard";
 import LatestFeed from "@/app/components/LatestFeed";
 import HowToSection from "@/app/components/HowToSection";
 
-import {
-  fetchHomeData,
-  firstCoverUrl,
-  type Article,
-} from "@/app/lib/strapi";
+import PumpfunSection from "@/app/components/PumpfunSection";
+import BonkfunSection from "@/app/components/BonkfunSection";
 
-function pickHowToCategory(categories: Category[]) {
-  const needles = ["how to", "how-to", "howto", "kako", "guide", "guides", "tutorial"];
+import { fetchHomeData, firstCoverUrl, type Article } from "@/app/lib/strapi";
+
+function pickCategory(categories: Category[], needles: string[]) {
   const found = categories.find((c) => {
     const n = (c?.name ?? "").toLowerCase().trim();
     return needles.some((k) => n.includes(k));
   });
   return found ?? null;
+}
+
+function articleMatchesCategory(a: Article, cat: Category) {
+  const c: any = (a as any)?.category;
+  if (!c) return false;
+
+  // current shape: category?: Category | null
+  if (typeof c === "object" && "id" in c) return (c as Category).id === cat.id;
+
+  // sometimes strapi v4 relation shape
+  const relId = c?.data?.id;
+  return relId === cat.id;
+}
+
+function formatShortDate(iso: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+}
+
+function buildBucket(params: {
+  categories: Category[];
+  allArticles: Article[];
+  heroFallback?: Article | null;
+  needles: string[];
+}) {
+  const { categories, allArticles, heroFallback, needles } = params;
+
+  const cat = pickCategory(categories, needles);
+  const candidates = cat ? allArticles.filter((a) => articleMatchesCategory(a, cat)) : [];
+  const chosen = (candidates.length ? candidates : allArticles.slice(0, 12)).slice(0, 6);
+
+  const featured = chosen[0] ?? heroFallback ?? null;
+  const list = chosen.slice(1, 5);
+
+  const imageUrl =
+    (featured ? firstCoverUrl(featured) : null) ??
+    (heroFallback ? firstCoverUrl(heroFallback) : null) ??
+    "https://picsum.photos/1200/800";
+
+  const seeAllHref = cat?.slug ? `/category/${cat.slug}` : "/news";
+
+  return { featured, list, imageUrl, seeAllHref };
 }
 
 export default async function HomePage() {
@@ -62,41 +104,37 @@ export default async function HomePage() {
   }
 
   const hero = articles[0] ?? null;
+
+  // Feed groups
   const topStories = articles.slice(1, 6);
   const latest = articles.slice(6);
 
   const mostPopular = latest.slice(0, 6);
   const latestFeed = latest.slice(6);
 
-  // ✅ HOW TO section logic (no slug needed)
-  const howToCat = pickHowToCategory(categories);
+  // 1) Pumpfun bucket
+  const pumpfun = buildBucket({
+    categories,
+    allArticles: articles,
+    heroFallback: hero,
+    needles: ["pumpfun", "pump.fun", "pump fun", "memecoin", "memecoins", "launchpad"],
+  });
 
-  const howToCandidates = howToCat
-    ? articles.filter((a) => {
-        const c = (a as any)?.category;
-        if (!c) return false;
+  // 2) Bonkfun bucket (✅ replaces TECH)
+  const bonkfun = buildBucket({
+    categories,
+    allArticles: articles,
+    heroFallback: hero,
+    needles: ["bonkfun", "bonk fun", "bonk", "memecoin", "memecoins"],
+  });
 
-        // Works with your current Article typing: category?: Category | null
-        if (typeof c === "object" && "id" in c) return (c as Category).id === howToCat.id;
-
-        // If Strapi v4 relation shape slips in sometimes
-        const relId = (c as any)?.data?.id;
-        return relId === howToCat.id;
-      })
-    : [];
-
-  // fallback: take some of the newest ones if no how-to category exists
-  const howToArticles = (howToCandidates.length ? howToCandidates : articles.slice(0, 6)).slice(0, 5);
-
-  const howToFeatured = howToArticles[0] ?? hero ?? null;
-  const howToList = howToArticles.slice(1);
-
-  const howToImage =
-    (howToFeatured ? firstCoverUrl(howToFeatured) : null) ??
-    (hero ? firstCoverUrl(hero) : null) ??
-    "https://picsum.photos/1200/800";
-
-  const howToSeeAllHref = howToCat?.slug ? `/category/${howToCat.slug}` : "/news";
+  // 3) HowTo bucket
+  const howto = buildBucket({
+    categories,
+    allArticles: articles,
+    heroFallback: hero,
+    needles: ["how to", "how-to", "howto", "kako", "guide", "guides", "tutorial"],
+  });
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -107,53 +145,95 @@ export default async function HomePage() {
       </div>
 
       {/* Top nav */}
-      <TopNav categories={categories} activeTab="top" />
+      <TopNav categories={categories} />
 
       <div className="relative mx-auto max-w-[1440px] px-4 lg:px-8 py-8">
-        {/* HERO */}
+        {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
-        {/* ✅ HOW TO (Verge-style) */}
-        {howToFeatured ? (
+        {/* 2) PUMPFUN */}
+        {pumpfun.featured ? (
           <section className="mb-12">
-            <HowToSection
-              label="HOW TO?"
-              seeAllHref={howToSeeAllHref}
+            <PumpfunSection
+              label="PUMPFUN"
+              seeAllHref={pumpfun.seeAllHref}
               featured={{
-                title: howToFeatured.title,
-                href: `/news/${howToFeatured.slug}`,
+                title: pumpfun.featured.title,
+                href: `/news/${pumpfun.featured.slug}`,
                 author: "FULLPORT",
-                date: howToFeatured.publishedAt
-                  ? new Date(howToFeatured.publishedAt)
-                      .toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                      .toUpperCase()
-                  : "",
-                imageUrl: howToImage,
-                imageAlt: howToFeatured.title,
+                date: formatShortDate(pumpfun.featured.publishedAt),
+                imageUrl: pumpfun.imageUrl,
+                imageAlt: pumpfun.featured.title,
               }}
-              items={howToList.map((a) => ({
+              items={pumpfun.list.map((a) => ({
                 id: a.id,
                 title: a.title,
                 href: `/news/${a.slug}`,
                 author: "FULLPORT",
-                date: a.publishedAt
-                  ? new Date(a.publishedAt)
-                      .toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                      .toUpperCase()
-                  : "",
+                date: formatShortDate(a.publishedAt),
+              }))}
+            />
+          </section>
+        ) : null}
+
+        {/* 3) TOP STORIES + MOST POPULAR */}
+        <section className="mb-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
+          <TopStoriesList articles={topStories} />
+          <MostPopularCard articles={mostPopular} />
+        </section>
+
+        {/* 4) BONKFUN (✅ replaces TECH section) */}
+        {bonkfun.featured ? (
+          <section className="mb-12">
+            <BonkfunSection
+              label="BONKFUN"
+              seeAllHref={bonkfun.seeAllHref}
+              featured={{
+                title: bonkfun.featured.title,
+                href: `/news/${bonkfun.featured.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(bonkfun.featured.publishedAt),
+                imageUrl: bonkfun.imageUrl,
+                imageAlt: bonkfun.featured.title,
+              }}
+              items={bonkfun.list.map((a) => ({
+                id: a.id,
+                title: a.title,
+                href: `/news/${a.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(a.publishedAt),
+              }))}
+            />
+          </section>
+        ) : null}
+
+        {/* 5) HOW TO */}
+        {howto.featured ? (
+          <section className="mb-12">
+            <HowToSection
+              label="HOW TO?"
+              seeAllHref={howto.seeAllHref}
+              featured={{
+                title: howto.featured.title,
+                href: `/news/${howto.featured.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(howto.featured.publishedAt),
+                imageUrl: howto.imageUrl,
+                imageAlt: howto.featured.title,
+              }}
+              items={howto.list.map((a) => ({
+                id: a.id,
+                title: a.title,
+                href: `/news/${a.slug}`,
+                author: "FULLPORT",
+                date: formatShortDate(a.publishedAt),
                 comments: undefined,
               }))}
             />
           </section>
         ) : null}
 
-        {/* Top Stories + Most Popular */}
-        <section className="mb-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
-          <TopStoriesList articles={topStories} />
-          <MostPopularCard articles={mostPopular} />
-        </section>
-
-        {/* Latest */}
+        {/* 6) LATEST (everything else) */}
         <LatestFeed articles={latestFeed} />
       </div>
 
