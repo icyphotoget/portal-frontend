@@ -73,10 +73,8 @@ function estimateReadTime(text: string) {
 }
 
 function getArticleCategory(a: any): Category | null {
-  // Strapi v5: category object directly
   if (a?.category && typeof a.category === "object") return a.category as Category;
 
-  // v4 fallback
   const v4 = a?.category?.data?.attributes;
   if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 } as Category;
 
@@ -242,7 +240,6 @@ function ListItem({ a }: { a: Article }) {
 }
 
 function Glow() {
-  // glow samo na desktopu (performance)
   return (
     <div className="pointer-events-none absolute inset-0 hidden lg:block">
       <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/6 blur-3xl" />
@@ -259,8 +256,7 @@ export default async function HomePage() {
       <main className="min-h-screen bg-zinc-950 text-zinc-100">
         <div className="mx-auto max-w-6xl px-4 py-10">
           <p className="text-zinc-300">
-            Missing{" "}
-            <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
+            Missing <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
           </p>
         </div>
       </main>
@@ -302,15 +298,15 @@ export default async function HomePage() {
     })(),
   }));
 
-  const latest = articles.slice(6, 16); // 10 komada za list/grid
+  const latest = articles.slice(6, 16);
   const topGrid = latest.slice(0, 6);
   const listItems = latest.slice(0, 8);
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* top subtle background */}
-      <div className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.08),transparent_55%)]" />
-      <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.06),transparent_55%)]" />
+      <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.10),transparent_55%)]" />
+      <div className="absolute inset-x-0 top-0 h-[620px] bg-[radial-gradient(circle_at_85%_10%,rgba(34,197,94,0.12),transparent_55%)]" />
 
       <div className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:pt-10">
         {/* Top bar */}
@@ -326,8 +322,6 @@ export default async function HomePage() {
             >
               News
             </Link>
-
-            {/* ✅ Auth buttons */}
             <AuthGate />
           </div>
         </div>
@@ -340,7 +334,7 @@ export default async function HomePage() {
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950/40 px-3 py-1 text-xs text-zinc-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
-                Live feed
+                Live market narratives
               </div>
 
               <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -348,7 +342,7 @@ export default async function HomePage() {
               </h1>
 
               <p className="mt-3 text-zinc-300">
-                Real-time crypto news, memecoins, and narratives — powered by Next.js + Strapi.
+                Breaking crypto headlines, memecoins, and on-chain stories — curated fast.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -356,25 +350,18 @@ export default async function HomePage() {
                   href="/news"
                   className="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-white transition"
                 >
-                  Browse Latest
+                  Explore headlines
                 </Link>
 
                 <Link
-                  href="/login"
+                  href="/news"
                   className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900/55 transition"
                 >
-                  Log in to comment
-                </Link>
-
-                <Link
-                  href="/sitemap.xml"
-                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900/55 transition"
-                >
-                  Sitemap
+                  Trending now
                 </Link>
               </div>
 
-              {/* Categories chips */}
+              {/* Topics */}
               {categories.length > 0 ? (
                 <div className="mt-7">
                   <div className="text-xs text-zinc-400">Topics</div>
@@ -400,7 +387,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Latest (mobile list + desktop grid) */}
+        {/* Latest */}
         <section className="mt-10">
           <SectionHeader
             title="Latest"
@@ -431,7 +418,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Footer */}
+        {/* Footer (clean) */}
         <footer className="mt-14 border-t border-zinc-800 pt-8 text-sm text-zinc-400">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -442,16 +429,12 @@ export default async function HomePage() {
               <Link href="/news" className="hover:text-zinc-200 transition">
                 News
               </Link>
-              <Link href="/sitemap.xml" className="hover:text-zinc-200 transition">
-                Sitemap
-              </Link>
             </div>
           </div>
           <div className="mt-6 text-xs">© {new Date().getFullYear()}</div>
         </footer>
       </div>
 
-      {/* Bottom nav */}
       <BottomNav />
     </main>
   );
