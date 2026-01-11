@@ -1,27 +1,27 @@
+// app/components/HowToSection.tsx
 import Link from "next/link";
 
-export type HowToItem = {
-  id: string | number;
+export type HowToFeatured = {
   title: string;
   href: string;
   author?: string;
-  date?: string; // npr "JAN 6"
-  comments?: number;
+  date?: string;
+  imageUrl?: string | null;
+  imageAlt?: string;
 };
 
-export type HowToFeatured = {
-  kicker?: string; // opcionalno, npr "HOW TO?"
+export type HowToItem = {
+  id: number | string;
   title: string;
   href: string;
   author?: string;
-  date?: string; // npr "JAN 8"
-  imageUrl: string;
-  imageAlt?: string;
+  date?: string;
+  comments?: number;
 };
 
 export default function HowToSection({
   label = "HOW TO?",
-  seeAllHref = "/how-to",
+  seeAllHref = "/news",
   featured,
   items,
 }: {
@@ -31,128 +31,117 @@ export default function HowToSection({
   items: HowToItem[];
 }) {
   return (
-    <section className="relative mx-auto max-w-[1440px] px-4 lg:px-8">
-      <div className="relative">
-        {/* Vertical label (left) */}
-        <div className="pointer-events-none absolute -left-2 top-0 hidden sm:block">
-          <div className="select-none text-[72px] font-black leading-none tracking-tight text-white/90">
-            <span
-              className="block origin-top-left -rotate-90"
-              style={{ textShadow: "0 10px 40px rgba(0,0,0,0.55)" }}
+    <div className="relative">
+      {/* Wrapper that creates the left gutter space for vertical text */}
+      <div className="relative mx-auto max-w-[1100px] pl-14 sm:pl-16 lg:pl-20">
+        {/* Vertical label (outside the pink card) */}
+        <div className="pointer-events-none absolute left-0 top-0 h-full">
+          <div className="sticky top-28">
+            <div
+              className={[
+                "select-none",
+                "text-white/90",
+                "font-black tracking-tight",
+                "text-[64px] sm:text-[84px] lg:text-[110px]",
+                "leading-none",
+                "[writing-mode:vertical-rl]",
+                "rotate-180",
+              ].join(" ")}
             >
               {label}
-            </span>
+            </div>
           </div>
         </div>
 
-        {/* Card */}
-        <div
-          className={[
-            "relative overflow-hidden rounded-[28px]",
-            "border border-white/10",
-            "bg-[#E7A7C9]", // verge-ish pink
-            "shadow-[0_30px_120px_rgba(0,0,0,0.55)]",
-            "sm:ml-[84px]", // space for vertical text
-          ].join(" ")}
-        >
-          {/* Header row */}
-          <div className="flex items-center justify-between px-6 pt-6">
+        {/* Pink card (smaller + cleaner) */}
+        <section className="relative overflow-hidden rounded-[22px] bg-[#f1b6d1] text-black">
+          {/* top row */}
+          <div className="flex items-center justify-between px-5 sm:px-6 lg:px-8 pt-5">
             <div className="flex items-center gap-3">
-              <span className="h-5 w-1 rounded-full bg-[#6D2DFF]" />
-              <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-black/85">
+              <span className="h-5 w-[3px] rounded-full bg-[#5b2bff]" />
+              <span className="text-xs font-extrabold uppercase tracking-[0.22em]">
                 {label}
-              </div>
+              </span>
             </div>
 
             <Link
               href={seeAllHref}
-              className="text-xs font-extrabold uppercase tracking-[0.18em] text-black/80 underline underline-offset-4 hover:text-black transition"
+              className="text-xs font-extrabold uppercase tracking-[0.22em] underline underline-offset-4 hover:opacity-80"
             >
-              SEE ALL
+              See all
             </Link>
           </div>
 
-          {/* Featured */}
-          <div className="px-6 pt-5">
-            <Link href={featured.href} className="block group">
-              <h3
-                className={[
-                  "max-w-[26ch]",
-                  "text-[40px] sm:text-[46px] lg:text-[52px]",
-                  "font-black leading-[0.95] tracking-tight",
-                  "text-black",
-                  "group-hover:opacity-90 transition",
-                ].join(" ")}
-              >
+          {/* content */}
+          <div className="px-5 sm:px-6 lg:px-8 pb-6 pt-4">
+            {/* Featured title */}
+            <Link href={featured.href} className="block">
+              <h2 className="max-w-[920px] text-[30px] sm:text-[40px] lg:text-[50px] font-black leading-[1.08] tracking-tight hover:opacity-90">
                 {featured.title}
-              </h3>
+              </h2>
+            </Link>
 
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-extrabold uppercase tracking-[0.18em] text-black/70">
+            {/* meta */}
+            {(featured.author || featured.date) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] opacity-80">
                 {featured.author ? <span>{featured.author}</span> : null}
+                {featured.author && featured.date ? <span>•</span> : null}
                 {featured.date ? <span>{featured.date}</span> : null}
               </div>
-            </Link>
-          </div>
+            )}
 
-          {/* Image */}
-          <div className="px-6 pt-6">
-            <Link href={featured.href} className="block group">
-              <div className="relative overflow-hidden rounded-2xl border border-black/10 bg-black/10">
-                <div className="relative aspect-[16/10] w-full">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={featured.imageUrl}
-                    alt={featured.imageAlt ?? featured.title}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+            {/* image */}
+            {featured.imageUrl ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-black/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={featured.imageUrl}
+                  alt={featured.imageAlt ?? featured.title}
+                  className="h-auto w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
-            </Link>
-          </div>
+            ) : null}
 
-          {/* List */}
-          <div className="px-6 pb-6 pt-6">
-            <div className="space-y-5">
-              {items.slice(0, 4).map((it) => (
-                <div key={it.id} className="border-t border-black/15 pt-5 first:border-t-0 first:pt-0">
-                  <Link href={it.href} className="group block">
-                    <div className="flex gap-3">
-                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#6D2DFF]" />
+            {/* list */}
+            {items?.length ? (
+              <div className="mt-5 divide-y divide-black/15">
+                {items.map((it) => (
+                  <Link
+                    key={String(it.id)}
+                    href={it.href}
+                    className="group block py-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="mt-2 h-2 w-2 rounded-full bg-[#5b2bff]" />
                       <div className="min-w-0">
-                        <div className="text-[22px] font-black leading-[1.05] text-black group-hover:opacity-90 transition">
+                        <div className="text-[18px] sm:text-[20px] font-black leading-snug tracking-tight group-hover:opacity-90">
                           {it.title}
                         </div>
 
                         {(it.author || it.date || typeof it.comments === "number") && (
-                          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-extrabold uppercase tracking-[0.18em] text-black/65">
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-75">
                             {it.author ? <span>{it.author}</span> : null}
+                            {it.author && it.date ? <span>•</span> : null}
                             {it.date ? <span>{it.date}</span> : null}
                             {typeof it.comments === "number" ? (
-                              <span className="inline-flex items-center gap-2">
-                                <span className="opacity-70">|</span>
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="inline-block h-4 w-4 rounded bg-black/10" />
-                                  {it.comments}
-                                </span>
-                              </span>
+                              <>
+                                <span>•</span>
+                                <span>{it.comments}</span>
+                              </>
                             ) : null}
                           </div>
                         )}
                       </div>
                     </div>
                   </Link>
-                </div>
-              ))}
-            </div>
-
-            {/* Bottom accent line */}
-            <div className="mt-6 h-[2px] w-full bg-[#6D2DFF]/70" />
+                ))}
+              </div>
+            ) : null}
           </div>
-        </div>
+        </section>
       </div>
-    </section>
+    </div>
   );
 }
