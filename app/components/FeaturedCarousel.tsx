@@ -62,7 +62,11 @@ export default function FeaturedCarousel({
     <div className="relative">
       <Link
         href={`/news/${a.slug}`}
-        className="group block overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-900/20"
+        className={[
+          "group block overflow-hidden rounded-[2rem] border border-zinc-800 bg-zinc-900/20",
+          // ✅ bitno: spriječi globalni <a> stil da oboji sve u cyan
+          "no-underline !text-zinc-50",
+        ].join(" ")}
       >
         <div className="relative aspect-[16/10] bg-zinc-900">
           {a.coverUrl ? (
@@ -81,31 +85,41 @@ export default function FeaturedCarousel({
             </>
           )}
 
-          {/* strong readability gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/10 to-transparent" />
+          {/* ✅ jači readability overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/35 to-transparent" />
 
           {/* category pill */}
           {a.category ? (
             <div className="absolute left-4 top-4">
-              <span className="rounded-full border border-zinc-800 bg-zinc-950/55 px-3 py-1 text-xs text-zinc-100 backdrop-blur">
+              <span className="rounded-full border border-zinc-800 bg-zinc-950/65 px-3 py-1 text-xs text-zinc-100 backdrop-blur">
                 {a.category.name}
               </span>
             </div>
           ) : null}
 
           {/* bottom blur panel */}
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-            <div className="rounded-[1.6rem] border border-white/10 bg-zinc-950/35 p-4 backdrop-blur-xl">
-              <div className="text-[11px] text-zinc-300/80">{meta}</div>
-              <div className="mt-1 line-clamp-2 text-[1.15rem] font-semibold leading-snug text-zinc-50">
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+            <div className="rounded-[1.6rem] border border-white/10 bg-zinc-950/55 p-4 sm:p-5 backdrop-blur-xl">
+              <div className="text-[11px] !text-zinc-200/75">{meta}</div>
+
+              {/* ✅ kontrolirana veličina + shadow za čitljivost */}
+              <div
+                className={[
+                  "mt-1 line-clamp-3 font-semibold leading-tight tracking-[-0.01em]",
+                  "text-[1.05rem] sm:text-[1.35rem] lg:text-[1.55rem]",
+                  "!text-zinc-50 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]",
+                ].join(" ")}
+              >
                 {a.title}
               </div>
+
               {a.excerpt ? (
-                <p className="mt-1 line-clamp-2 text-sm text-zinc-200/80">
+                <p className="mt-2 line-clamp-2 text-sm !text-zinc-200/75">
                   {a.excerpt}
                 </p>
               ) : null}
-              <div className="mt-3 text-sm text-zinc-200/90">
+
+              <div className="mt-3 text-sm !text-zinc-100/90">
                 Open{" "}
                 <span className="inline-block translate-x-0 transition group-hover:translate-x-1">
                   →
@@ -126,9 +140,7 @@ export default function FeaturedCarousel({
               onClick={() => setActive(i)}
               className={[
                 "h-2.5 w-2.5 rounded-full transition",
-                i === active
-                  ? "bg-zinc-100"
-                  : "bg-zinc-700 hover:bg-zinc-600",
+                i === active ? "bg-zinc-100" : "bg-zinc-700 hover:bg-zinc-600",
               ].join(" ")}
             />
           ))}

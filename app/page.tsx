@@ -1,6 +1,5 @@
 // app/page.tsx
 import Link from "next/link";
-import FeaturedCarousel, { FeaturedItem } from "@/app/components/FeaturedCarousel";
 import BottomNav from "@/app/components/BottomNav";
 
 type StrapiMedia = any;
@@ -33,11 +32,18 @@ function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
 
 function pickMediaUrl(media: any): string | null {
   if (!media) return null;
+
+  // Strapi v5
   if (typeof media.url === "string") return absolutizeStrapiUrl(media.url);
+
+  // Strapi v4: { data: { attributes: { url } } }
   const v4 = media?.data?.attributes?.url;
   if (typeof v4 === "string") return absolutizeStrapiUrl(v4);
+
+  // Sometimes: { data: [{ attributes: { url } }] }
   const v4arr = media?.data?.[0]?.attributes?.url;
   if (typeof v4arr === "string") return absolutizeStrapiUrl(v4arr);
+
   return null;
 }
 
@@ -51,19 +57,17 @@ function formatDate(iso: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" });
-}
-
-function estimateReadTime(text: string) {
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.round(words / 200));
-  return `${minutes} min`;
+  return d
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .toUpperCase();
 }
 
 function getArticleCategory(a: any): Category | null {
   if (a?.category && typeof a.category === "object") return a.category as Category;
+
   const v4 = a?.category?.data?.attributes;
   if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 } as Category;
+
   return null;
 }
 
@@ -80,7 +84,8 @@ async function fetchHomeData(baseUrl: string) {
   const articlesUrl =
     `${baseUrl}/api/articles?sort=publishedAt:desc` +
     `&populate=coverImage&populate=category` +
-    `&pagination[pageSize]=24`;
+    `&pagination[pageSize]=50`;
+
   const categoriesUrl = `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
 
   const [articlesJson, categoriesJson] = await Promise.all([
@@ -94,14 +99,56 @@ async function fetchHomeData(baseUrl: string) {
   };
 }
 
+function Pill({
+  children,
+  active,
+  href,
+}: {
+  children: React.ReactNode;
+  active?: boolean;
+  href?: string;
+}) {
+  const cls = [
+    "inline-flex items-center rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wide transition",
+    active
+      ? "bg-cyan-400 text-black"
+      : "border border-zinc-700 text-white hover:bg-zinc-900",
+  ].join(" ");
+
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {children}
+      </Link>
+    );
+  }
+
+  return <span className={cls}>{children}</span>;
+}
+
+function CategoryBadge({ cat }: { cat: Category | null }) {
+  const label = cat?.name ?? "News";
+  return (
+    <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+      {label}
+    </span>
+  );
+}
+
 export default async function HomePage() {
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
 
   if (!baseUrl) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-7xl px-4 py-10">
-          <p className="text-zinc-400">Missing <code>NEXT_PUBLIC_STRAPI_URL</code>.</p>
+          <p className="text-zinc-400">
+            Missing{" "}
+            <code className="rounded bg-zinc-900 px-1">
+              NEXT_PUBLIC_STRAPI_URL
+            </code>
+            .
+          </p>
         </div>
       </main>
     );
@@ -116,380 +163,350 @@ export default async function HomePage() {
     categories = data.categories;
   } catch (e: any) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-7xl px-4 py-10">
           <h1 className="text-3xl font-bold">FullPort</h1>
           <p className="mt-2 text-zinc-400">Failed to load data.</p>
+          <pre className="mt-4 whitespace-pre-wrap rounded-xl bg-zinc-900/60 p-4 text-xs text-zinc-200">
+            {String(e?.message ?? e)}
+          </pre>
         </div>
       </main>
     );
   }
 
-  const hero = articles[0];
-  const featuredRaw = articles.slice(1, 4);
-  const latest = articles.slice(4, 16);
+  const hero = articles[0] ?? null;
+  const topStories = articles.slice(1, 6);
+  const latest = articles.slice(6);
 
-  const featuredItems: FeaturedItem[] = featuredRaw.map((a) => {
-    const c = getArticleCategory(a);
-    return {
-      id: a.id,
-      title: a.title,
-      slug: a.slug,
-      excerpt: a.excerpt ?? "",
-      publishedAt: a.publishedAt,
-      coverUrl: firstCoverUrl(a),
-      category: c ? { name: c.name, slug: c.slug } : null,
-    };
-  });
+  const heroCover = hero ? firstCoverUrl(hero) : null;
+  const heroCat = hero ? getArticleCategory(hero) : null;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Glassmorphic ambient background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(ellipse_at_30%_20%,rgba(16,185,129,0.15),transparent_60%)]" />
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(ellipse_at_75%_15%,rgba(99,102,241,0.12),transparent_60%)]" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)] opacity-20" />
+    <main className="min-h-screen bg-black text-white">
+      {/* Subtle glows */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[140px]" />
+        <div className="absolute -bottom-56 right-[-160px] h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[160px]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="relative border-b border-zinc-800/60 backdrop-blur-xl bg-zinc-950/40">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition" />
-                <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                  <span className="text-lg font-black text-white">F</span>
-                </div>
-              </div>
-              <span className="text-xl font-bold tracking-tight">FullPort</span>
-            </Link>
-
-            <div className="flex items-center gap-3">
-              <Link href="/news" className="px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/50 transition">
-                Explore
-              </Link>
-              <Link href="/news?tab=trending" className="px-4 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/50 transition">
-                Trending
-              </Link>
-              <Link href="/login" className="ml-2 px-5 py-2 rounded-xl bg-white text-zinc-950 text-sm font-semibold shadow-lg shadow-white/10 hover:shadow-white/20 hover:scale-[1.02] transition">
-                Sign In
+      {/* Top Navigation */}
+      <nav className="sticky top-0 z-50 bg-black/85 backdrop-blur">
+        <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
+          <div className="relative flex h-16 items-center border-b border-zinc-800">
+            {/* Left */}
+            <div className="flex flex-1 items-center gap-3">
+              <Link
+                href="/news"
+                className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-zinc-900 transition"
+              >
+                News
               </Link>
             </div>
+
+            {/* Center (LOGO) */}
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <Link href="/" className="flex items-center justify-center">
+                <img
+  src="/logo-fullport.png"
+  alt="FullPort"
+  className="h-7 sm:h-8 md:h-9 object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
+  draggable={false}
+/>
+              </Link>
+            </div>
+
+            {/* Right */}
+            <div className="flex flex-1 items-center justify-end gap-2">
+              <Link
+                href="/login"
+                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
+              >
+                Log in
+              </Link>
+
+              <Link
+                href="/news"
+                className="rounded-full p-2 hover:bg-zinc-900 transition"
+                aria-label="Open menu"
+                title="Open"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex items-center gap-2 py-4">
+            <Pill active href="/">
+              Top Stories
+            </Pill>
+            <Pill href="/news?tab=following">Following</Pill>
+
+            {categories.slice(0, 3).map((c) => (
+              <Pill key={c.id} href={`/category/${c.slug}`}>
+                {c.name}
+              </Pill>
+            ))}
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-xs font-medium text-emerald-300 mb-6 shadow-lg shadow-emerald-500/20">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-              </span>
-              Live Updates
-            </div>
-            
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight mb-6">
-              <span className="bg-gradient-to-r from-white via-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-                Crypto News
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-emerald-400 via-emerald-300 to-cyan-400 bg-clip-text text-transparent">
-                At Light Speed
-              </span>
-            </h1>
-            
-            <p className="text-lg text-zinc-300/90 max-w-2xl mx-auto mb-8 leading-relaxed">
-              Real-time crypto narratives, memecoin launches, and on-chain alpha. Stay ahead of the market with instant insights.
-            </p>
+      <div className="relative mx-auto max-w-[1440px] px-4 lg:px-8 py-8">
+        {/* ✅ HERO (mobile-first, čitko, bez overlapa) */}
+        {hero ? (
+          <section className="mb-10">
+            <Link
+              href={`/news/${hero.slug}`}
+              className="group block no-underline !text-zinc-50"
+            >
+              <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+                <div className="relative min-h-[340px] sm:min-h-[420px] lg:min-h-[520px] overflow-hidden">
+                  {heroCover ? (
+                    <img
+                      src={heroCover}
+                      alt={hero.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-zinc-900 to-black" />
+                  )}
 
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <Link href="/news" className="group relative px-8 py-3.5 rounded-xl bg-white text-zinc-950 font-semibold text-sm shadow-xl shadow-white/10 hover:shadow-white/20 hover:scale-[1.02] transition-all">
-                Start Reading
-              </Link>
-              <Link href="/news?tab=trending" className="px-8 py-3.5 rounded-xl border border-zinc-700/60 bg-zinc-800/40 text-zinc-200 font-semibold text-sm backdrop-blur hover:bg-zinc-800/60 hover:border-zinc-600 transition">
-                What's Trending
-              </Link>
-            </div>
-          </div>
+                  {/* overlay za čitljivost */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
 
-          {/* Hero Card - Glass style */}
-          {hero && (
-            <Link href={`/news/${hero.slug}`} className="group block relative">
-              <div className="relative overflow-hidden rounded-3xl border border-zinc-800/60 bg-zinc-900/20 backdrop-blur-xl shadow-2xl hover:border-zinc-700 transition-all duration-300">
-                <div className="grid lg:grid-cols-2 gap-0">
-                  {/* Image */}
-                  <div className="relative aspect-[16/10] lg:aspect-auto overflow-hidden">
-                    {firstCoverUrl(hero) ? (
-                      <img
-                        src={firstCoverUrl(hero)!}
-                        alt={hero.title}
-                        className="absolute inset-0 w-full h-full object-cover transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.14),transparent_55%)]" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent lg:bg-gradient-to-r" />
+                  {/* top meta */}
+                  <div className="absolute left-0 right-0 top-0 p-4 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <CategoryBadge cat={heroCat} />
+                      <span className="text-xs text-white/75">
+                        {formatDate(hero.publishedAt)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="relative p-8 lg:p-12 flex flex-col justify-center">
-                    <div className="flex items-center gap-3 mb-4">
-                      {getArticleCategory(hero) && (
-                        <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
-                          {getArticleCategory(hero)!.name}
+                  {/* bottom content */}
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+                    <div className="rounded-2xl border border-white/10 bg-black/40 p-4 sm:bg-black/45 sm:p-6 sm:backdrop-blur-xl">
+                      <h1
+                        className={[
+                          "font-extrabold leading-[1.05] tracking-[-0.02em]",
+                          "text-[1.65rem] sm:text-[2.2rem] lg:text-[2.8rem]",
+                          "text-zinc-50 transition group-hover:opacity-90",
+                          "line-clamp-2 sm:line-clamp-3",
+                        ].join(" ")}
+                        style={{ textShadow: "0 2px 18px rgba(0,0,0,0.85)" }}
+                      >
+                        {hero.title}
+                      </h1>
+
+                      {hero.excerpt ? (
+                        <p className="mt-2 text-sm sm:text-base text-zinc-200/85 leading-relaxed line-clamp-2 sm:line-clamp-3">
+                          {hero.excerpt}
+                        </p>
+                      ) : null}
+
+                      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/90">
+                        Open story
+                        <span className="translate-x-0 transition group-hover:translate-x-1">
+                          →
                         </span>
-                      )}
-                      <span className="text-xs text-zinc-400">{formatDate(hero.publishedAt)}</span>
-                      <span className="text-xs text-zinc-600">·</span>
-                      <span className="text-xs text-zinc-400">{estimateReadTime(hero.excerpt ?? hero.title)}</span>
-                    </div>
-
-                    <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4 group-hover:text-emerald-400 transition leading-tight">
-                      {hero.title}
-                    </h2>
-
-                    {hero.excerpt && (
-                      <p className="text-zinc-300/90 text-base leading-relaxed mb-6 line-clamp-3">
-                        {hero.excerpt}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-                      Read Full Story
-                      <span className="transition group-hover:translate-x-1">→</span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* little fade on bottom */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/35 to-transparent" />
                 </div>
               </div>
             </Link>
-          )}
-        </div>
-      </section>
+          </section>
+        ) : null}
 
-      {/* Categories Bar - Glass style */}
-      {categories.length > 0 && (
-        <section className="relative py-8 border-y border-zinc-800/60 backdrop-blur-sm bg-zinc-950/40">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              <span className="text-sm font-semibold text-zinc-400 shrink-0">Topics:</span>
-              {categories.slice(0, 8).map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/category/${c.slug}`}
-                  className="shrink-0 px-4 py-2 rounded-full border border-zinc-700/60 bg-zinc-900/40 text-sm font-medium text-zinc-300 backdrop-blur hover:bg-zinc-800/60 hover:border-zinc-600 hover:text-white transition"
-                >
-                  {c.name}
+        {/* Two-column on desktop: Top Stories + Most Popular */}
+        <section className="mb-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
+          {/* Top Stories */}
+          <div>
+            <div className="mb-6 flex items-end justify-between">
+              <h2 className="text-xl font-extrabold text-zinc-100">Top Stories</h2>
+              <Link href="/news" className="text-sm text-zinc-300 hover:text-white transition">
+                View all →
+              </Link>
+            </div>
+
+            <div className="space-y-6">
+              {topStories.map((article, idx) => {
+                const cat = getArticleCategory(article);
+                const coverUrl = firstCoverUrl(article);
+
+                return (
+                  <Link
+                    key={article.id}
+                    href={`/news/${article.slug}`}
+                    className="group flex gap-4 border-b border-zinc-800 pb-6 last:border-0 no-underline !text-zinc-50"
+                  >
+                    {/* Number badge */}
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-lg font-extrabold text-cyan-300">
+                      {idx + 1}
+                    </div>
+
+                    {/* Thumb */}
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-900">
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt={article.title}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.05]"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-zinc-950" />
+                      )}
+                    </div>
+
+                    {/* Text */}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-xl font-extrabold leading-tight mb-2 text-zinc-50 transition group-hover:opacity-90 line-clamp-3">
+                        {article.title}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        <span className="inline-flex items-center gap-2 font-bold uppercase tracking-wide text-zinc-200/80">
+                          <span className="h-1.5 w-1.5 rounded-full bg-cyan-400/80" />
+                          {cat?.name ?? "News"}
+                        </span>
+                        <span className="text-zinc-500">{formatDate(article.publishedAt)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Most Popular */}
+          <div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-purple-600/95 to-fuchsia-700/95 p-6 lg:p-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold text-white">Most Popular</h2>
+                <Link href="/news" className="text-sm text-white/80 hover:text-white transition">
+                  More →
                 </Link>
-              ))}
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {latest.slice(0, 6).map((article, idx) => (
+                  <Link
+                    key={article.id}
+                    href={`/news/${article.slug}`}
+                    className="group flex items-start gap-4 border-b border-white/15 pb-4 last:border-0 no-underline !text-white"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-extrabold text-white">
+                      {idx + 1}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-2 text-lg font-extrabold text-white transition group-hover:opacity-90 leading-snug">
+                        {article.title}
+                      </h3>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-white/70">
+                        <span className="font-bold uppercase tracking-wide">
+                          {getArticleCategory(article)?.name ?? "News"}
+                        </span>
+                        <span>•</span>
+                        <span>{formatDate(article.publishedAt)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>
-      )}
 
-      {/* Featured Stories - Glass style */}
-      <section className="relative py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold tracking-tight">Featured Stories</h2>
-            <Link href="/news" className="group flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition">
-              View All
-              <span className="transition group-hover:translate-x-1">→</span>
-            </Link>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {featuredRaw.map((a) => {
-              const coverUrl = firstCoverUrl(a);
-              const cat = getArticleCategory(a);
-
-              return (
-                <Link
-                  key={a.id}
-                  href={`/news/${a.slug}`}
-                  className="group relative"
-                >
-                  <div className="relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/20 backdrop-blur-xl hover:bg-zinc-900/40 hover:border-zinc-700 transition-all duration-300 shadow-xl">
-                    {/* Image */}
-                    <div className="relative aspect-[16/9] overflow-hidden">
-                      {coverUrl ? (
-                        <img
-                          src={coverUrl}
-                          alt={a.title}
-                          className="w-full h-full object-cover transition duration-700 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.14),transparent_55%)]" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent" />
-                      
-                      {cat && (
-                        <div className="absolute top-3 left-3">
-                          <span className="px-3 py-1.5 rounded-lg bg-zinc-950/80 backdrop-blur-sm border border-zinc-700/50 text-xs font-semibold text-white">
-                            {cat.name}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
-                        <span>{formatDate(a.publishedAt)}</span>
-                        <span>·</span>
-                        <span>{estimateReadTime(a.excerpt ?? a.title)}</span>
-                      </div>
-
-                      <h3 className="text-lg font-bold leading-snug mb-2 line-clamp-2 group-hover:text-emerald-400 transition">
-                        {a.title}
-                      </h3>
-
-                      {a.excerpt && (
-                        <p className="text-sm text-zinc-300/90 line-clamp-2 leading-relaxed">
-                          {a.excerpt}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Latest Grid - Glass style */}
-      <section className="relative py-20 bg-zinc-950/50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold tracking-tight">Latest Updates</h2>
-            <Link href="/news" className="group flex items-center gap-2 text-sm font-semibold text-zinc-300 hover:text-white transition">
-              View All
-              <span className="transition group-hover:translate-x-1">→</span>
-            </Link>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {latest.map((a) => {
-              const coverUrl = firstCoverUrl(a);
-              const cat = getArticleCategory(a);
-
-              return (
-                <Link
-                  key={a.id}
-                  href={`/news/${a.slug}`}
-                  className="group"
-                >
-                  <div className="relative overflow-hidden rounded-xl border border-zinc-800/60 bg-zinc-900/20 backdrop-blur-xl hover:bg-zinc-900/40 hover:border-zinc-700 transition-all duration-300">
-                    {/* Compact Image */}
-                    <div className="relative aspect-[16/9] overflow-hidden">
-                      {coverUrl ? (
-                        <img
-                          src={coverUrl}
-                          alt={a.title}
-                          className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.14),transparent_55%)]" />
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      {cat && (
-                        <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400 uppercase tracking-wide mb-2">
-                          {cat.name}
-                        </span>
-                      )}
-
-                      <h3 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-emerald-400 transition">
-                        {a.title}
-                      </h3>
-
-                      <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-2">
-                        <span>{formatDate(a.publishedAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter CTA - Glass style */}
-      <section className="relative py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-zinc-800/60 bg-zinc-900/20 backdrop-blur-xl p-12 text-center shadow-2xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.1),transparent_70%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.08),transparent_70%)]" />
-            
-            <div className="relative z-10 max-w-2xl mx-auto">
-              <h2 className="text-4xl font-bold tracking-tight mb-4">
-                Never Miss a Beat
-              </h2>
-              <p className="text-lg text-zinc-300/90 mb-8 leading-relaxed">
-                Get the hottest crypto stories delivered straight to your inbox. Join thousands of traders staying ahead.
-              </p>
-              
-              <div className="flex gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 px-4 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/60 backdrop-blur text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-500/50 transition"
-                />
-                <button className="px-8 py-3 rounded-xl bg-white text-zinc-950 font-semibold text-sm shadow-lg shadow-white/10 hover:shadow-white/20 hover:scale-[1.02] transition-all">
-                  Subscribe
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer - Glass style */}
-      <footer className="relative border-t border-zinc-800/60 backdrop-blur-sm bg-zinc-950/40 py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="md:col-span-2">
-              <Link href="/" className="flex items-center gap-3 mb-4">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                  <span className="text-base font-black text-white">F</span>
-                </div>
-                <span className="text-lg font-bold tracking-tight">FullPort</span>
+        {/* Latest feed */}
+        {latest.slice(6).length ? (
+          <section>
+            <div className="mb-6 flex items-end justify-between">
+              <h2 className="text-xl font-extrabold">Latest</h2>
+              <Link href="/news" className="text-sm text-zinc-300 hover:text-white transition">
+                View all →
               </Link>
-              <p className="text-sm text-zinc-400 max-w-xs leading-relaxed">
-                Your real-time source for crypto news, market narratives, and on-chain intelligence.
-              </p>
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-3 text-sm">Platform</h3>
-              <div className="flex flex-col gap-2 text-sm text-zinc-400">
-                <Link href="/news" className="hover:text-white transition">Explore</Link>
-                <Link href="/news?tab=trending" className="hover:text-white transition">Trending</Link>
-              </div>
+            <div className="space-y-8">
+              {latest.slice(6).map((article) => {
+                const cat = getArticleCategory(article);
+                const coverUrl = firstCoverUrl(article);
+
+                return (
+                  <Link
+                    key={article.id}
+                    href={`/news/${article.slug}`}
+                    className="group block border-t border-zinc-800 pt-8 first:border-0 first:pt-0 no-underline !text-zinc-50"
+                  >
+                    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+                      <div>
+                        {cat ? (
+                          <div className="mb-2">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">
+                              {cat.name}
+                            </span>
+                          </div>
+                        ) : null}
+
+                        <h3 className="text-2xl font-extrabold leading-tight mb-3 text-zinc-50 transition group-hover:opacity-90 line-clamp-3">
+                          {article.title}
+                        </h3>
+
+                        {article.excerpt ? (
+                          <p className="text-zinc-400 leading-relaxed mb-3 line-clamp-3">
+                            {article.excerpt}
+                          </p>
+                        ) : null}
+
+                        <div className="flex items-center gap-3 text-sm text-zinc-500">
+                          <span>{formatDate(article.publishedAt)}</span>
+                        </div>
+                      </div>
+
+                      <div className="relative aspect-[16/9] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+                        {coverUrl ? (
+                          <img
+                            src={coverUrl}
+                            alt={article.title}
+                            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-zinc-950" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
+          </section>
+        ) : null}
+      </div>
 
-            <div>
-              <h3 className="font-semibold mb-3 text-sm">Account</h3>
-              <div className="flex flex-col gap-2 text-sm text-zinc-400">
-                <Link href="/login" className="hover:text-white transition">Sign In</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500">
-            <p>© {new Date().getFullYear()} FullPort. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-
-      <BottomNav />
+      {/* Bottom nav only on mobile */}
+      <div className="lg:hidden">
+        <BottomNav />
+      </div>
     </main>
   );
 }
