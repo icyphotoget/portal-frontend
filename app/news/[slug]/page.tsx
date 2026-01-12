@@ -7,7 +7,6 @@ import StrapiBlocks from "@/app/components/StrapiBlocks";
 import Comments from "@/app/components/Comments";
 import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
-
 type Article = {
   id: number;
   documentId?: string;
@@ -44,19 +43,28 @@ function pickBestUrlFromAttributes(attrs: any): string | null {
 
 function pickMediaUrl(media: any): string | null {
   if (!media) return null;
+
+  // already flattened media (v5 sometimes)
   if (Array.isArray(media)) return pickMediaUrl(media[0]);
+
   if (media && typeof media === "object") {
+    // v5 style: { url, formats? }
     if (typeof media.url === "string") {
       const best = pickBestUrlFromAttributes(media);
       return best ?? absolutizeStrapiUrl(media.url);
     }
   }
+
+  // v4: { data: { attributes: { url, formats } } }
   const v4attrs = media?.data?.attributes;
   const v4best = pickBestUrlFromAttributes(v4attrs);
   if (v4best) return v4best;
+
+  // v4 array: { data: [{ attributes: ... }] }
   const v4arrAttrs = media?.data?.[0]?.attributes;
   const v4arrBest = pickBestUrlFromAttributes(v4arrAttrs);
   if (v4arrBest) return v4arrBest;
+
   return null;
 }
 
@@ -67,22 +75,60 @@ function formatDate(iso: string | null) {
   return (
     d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
     ", " +
-    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" })
+    d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    })
   );
 }
 
 function getArticleCategory(a: any) {
-  if (a?.category && typeof a.category === "object") return a.category;
-  const v4 = a?.category?.data?.attributes;
-  if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 };
+  if (!a) return null;
+
+  // flattened category (if you normalized elsewhere)
+  const direct = a?.category;
+  if (direct?.name && direct?.slug) return direct;
+
+  // v4/v5 relation
+  const rel = a?.category?.data;
+  const attrs = rel?.attributes;
+  if (attrs?.name && attrs?.slug) return { id: rel?.id ?? 0, ...attrs };
+
   return null;
+}
+
+// ✅ IMPORTANT: Strapi v4/v5 list returns { data: [{ id, attributes }] }
+function flattenArticleEntity(entity: any): Article | null {
+  if (!entity) return null;
+
+  // Already flattened
+  if (typeof entity?.id === "number" && entity?.title && entity?.slug) return entity as Article;
+
+  const id = entity?.id;
+  const attrs = entity?.attributes;
+
+  if (typeof id !== "number" || !attrs) return null;
+
+  return {
+    id,
+    documentId: attrs?.documentId,
+    title: attrs?.title ?? "",
+    slug: attrs?.slug ?? "",
+    excerpt: attrs?.excerpt ?? null,
+    content: attrs?.content ?? null,
+    publishedAt: attrs?.publishedAt ?? null,
+    coverImage: attrs?.coverImage ?? null,
+    category: attrs?.category ?? null,
+  };
 }
 
 export default function NewsSlugPage() {
   const params = useParams();
   const slug = (params?.slug as string) ?? null;
-  const supabase = useMemo(() => createSupabaseBrowser(), []);
 
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const [article, setArticle] = useState<Article | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,8 +142,9 @@ export default function NewsSlugPage() {
   // get current user
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-  }, []);
+  }, [supabase]);
 
+  // load article from Strapi
   useEffect(() => {
     if (!slug) return;
 
@@ -110,7 +157,7 @@ export default function NewsSlugPage() {
     const url =
       `${baseUrl}/api/articles?` +
       `filters[slug][$eq]=${encodeURIComponent(slug)}` +
-      `&populate=coverImage&populate=category` +
+      `&populate[coverImage]=true&populate[category]=true` +
       `&pagination[pageSize]=1`;
 
     let alive = true;
@@ -124,9 +171,17 @@ export default function NewsSlugPage() {
       })
       .then((json) => {
         if (!alive) return;
-        const item = (json.data?.[0] ?? null) as Article | null;
-        setArticle(item);
-        if (!item) setError("Article not found (no data from Strapi).");
+
+        const entity = json?.data?.[0] ?? null;
+        const flat = flattenArticleEntity(entity);
+
+        if (!flat || !flat.slug) {
+          setArticle(null);
+          setError("Article not found (no data from Strapi).");
+          return;
+        }
+
+        setArticle(flat);
       })
       .catch((e) => alive && setError(String(e?.message ?? e)));
 
@@ -139,6 +194,7 @@ export default function NewsSlugPage() {
 
   const coverUrl = useMemo(() => {
     if (!article) return null;
+    // coverImage might be relation/media in attrs
     return pickMediaUrl((article as any).coverImage);
   }, [article]);
 
@@ -178,7 +234,7 @@ export default function NewsSlugPage() {
     return () => {
       alive = false;
     };
-  }, [userId, slug]);
+  }, [supabase, userId, slug]);
 
   // Load comment count (real)
   async function loadCommentCount() {
@@ -199,10 +255,8 @@ export default function NewsSlugPage() {
 
   useEffect(() => {
     loadCommentCount();
-
     if (!slug) return;
 
-    // realtime update count when comments change
     const channel = supabase
       .channel(`comment-count:${slug}`)
       .on(
@@ -216,7 +270,7 @@ export default function NewsSlugPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [supabase, slug]);
 
   async function onShare() {
     try {
@@ -277,14 +331,19 @@ export default function NewsSlugPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-black text-white">
+      <main className="mino min-h-screen bg-black text-white">
         <div className="mx-auto max-w-4xl px-4 py-10">
           <Link href="/" className="text-sm text-zinc-400 hover:text-white">
             ← Back
           </Link>
+
           <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/20 p-8">
             <h1 className="text-2xl font-bold">Unable to load article</h1>
             <p className="mt-2 text-sm text-zinc-400">{error}</p>
+
+            <div className="mt-4 text-xs text-zinc-500">
+              Tip: provjeri da je <span className="font-mono">NEXT_PUBLIC_STRAPI_URL</span> HTTPS (ne HTTP) u Vercelu.
+            </div>
           </div>
         </div>
       </main>
@@ -412,6 +471,7 @@ export default function NewsSlugPage() {
         {coverUrl ? (
           <div className="my-8 -mx-4 sm:-mx-6">
             <div className="relative aspect-[16/9] bg-zinc-900 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={coverUrl}
                 alt={article.title}
@@ -449,7 +509,11 @@ export default function NewsSlugPage() {
         {/* Content */}
         <article className="prose prose-invert prose-lg max-w-none mt-8">
           <div className="text-zinc-200 leading-relaxed">
-            {Array.isArray(article.content) ? <StrapiBlocks blocks={article.content} /> : <p className="text-zinc-400">No content available.</p>}
+            {Array.isArray(article.content) ? (
+              <StrapiBlocks blocks={article.content} />
+            ) : (
+              <p className="text-zinc-400">No content available.</p>
+            )}
           </div>
         </article>
 
