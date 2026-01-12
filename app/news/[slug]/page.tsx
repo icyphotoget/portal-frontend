@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import StrapiBlocks from "@/app/components/StrapiBlocks";
 import Comments from "@/app/components/Comments";
+import { supabase } from "@/app/lib/supabase/client";
 
 type Article = {
   id: number;
@@ -16,7 +17,6 @@ type Article = {
   publishedAt: string | null;
   coverImage?: any;
   category?: any;
-  // future: author?: any;
 };
 
 function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
@@ -28,43 +28,34 @@ function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
 
 function pickBestUrlFromAttributes(attrs: any): string | null {
   if (!attrs) return null;
-
   const formats = attrs.formats;
   const tryKeys = ["large", "medium", "small", "thumbnail"];
-
   if (formats && typeof formats === "object") {
     for (const k of tryKeys) {
       const u = formats?.[k]?.url;
       if (typeof u === "string") return absolutizeStrapiUrl(u);
     }
   }
-
   const direct = attrs.url;
   if (typeof direct === "string") return absolutizeStrapiUrl(direct);
-
   return null;
 }
 
 function pickMediaUrl(media: any): string | null {
   if (!media) return null;
-
   if (Array.isArray(media)) return pickMediaUrl(media[0]);
-
   if (media && typeof media === "object") {
     if (typeof media.url === "string") {
       const best = pickBestUrlFromAttributes(media);
       return best ?? absolutizeStrapiUrl(media.url);
     }
   }
-
   const v4attrs = media?.data?.attributes;
   const v4best = pickBestUrlFromAttributes(v4attrs);
   if (v4best) return v4best;
-
   const v4arrAttrs = media?.data?.[0]?.attributes;
   const v4arrBest = pickBestUrlFromAttributes(v4arrAttrs);
   if (v4arrBest) return v4arrBest;
-
   return null;
 }
 
@@ -73,27 +64,16 @@ function formatDate(iso: string | null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return (
-    d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }) +
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
     ", " +
-    d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZoneName: "short",
-    })
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" })
   );
 }
 
 function getArticleCategory(a: any) {
   if (a?.category && typeof a.category === "object") return a.category;
-
   const v4 = a?.category?.data?.attributes;
   if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 };
-
   return null;
 }
 
@@ -103,6 +83,17 @@ export default function NewsSlugPage() {
 
   const [article, setArticle] = useState<Article | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // supabase user + bookmark + comment count
+  const [userId, setUserId] = useState<string | null>(null);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bmLoading, setBmLoading] = useState(false);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
+
+  // get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -145,14 +136,141 @@ export default function NewsSlugPage() {
 
   const coverUrl = useMemo(() => {
     if (!article) return null;
-    const c = (article as any).coverImage;
-    return pickMediaUrl(c);
+    return pickMediaUrl((article as any).coverImage);
   }, [article]);
 
-  // ✅ Author (temporary until Strapi author exists)
+  // Author (temporary)
   const authorName = "FullPort Staff";
   const authorInitial = authorName.charAt(0).toUpperCase();
   const authorBio = "Covering crypto news, memecoins, and on-chain stories.";
+
+  // Check bookmark state
+  useEffect(() => {
+    if (!userId || !slug) {
+      setBookmarked(false);
+      return;
+    }
+
+    let alive = true;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("bookmarks")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("article_slug", slug)
+        .maybeSingle();
+
+      if (!alive) return;
+
+      if (error) {
+        console.error("bookmark check error:", error);
+        setBookmarked(false);
+        return;
+      }
+
+      setBookmarked(!!data);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [userId, slug]);
+
+  // Load comment count (real)
+  async function loadCommentCount() {
+    if (!slug) return;
+    const { count, error } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("article_slug", slug);
+
+    if (error) {
+      console.error("comment count error:", error);
+      setCommentCount(null);
+      return;
+    }
+
+    setCommentCount(count ?? 0);
+  }
+
+  useEffect(() => {
+    loadCommentCount();
+
+    if (!slug) return;
+
+    // realtime update count when comments change
+    const channel = supabase
+      .channel(`comment-count:${slug}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "comments", filter: `article_slug=eq.${slug}` },
+        () => loadCommentCount()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  async function onShare() {
+    try {
+      const url = typeof window !== "undefined" ? window.location.href : "";
+      const title = article?.title ?? "FullPort";
+      const text = article?.excerpt ?? "";
+
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      alert("Link copied!");
+    } catch {
+      try {
+        const url = window.location.href;
+        prompt("Copy this link:", url);
+      } catch {}
+    }
+  }
+
+  async function toggleBookmark() {
+    if (!slug) return;
+
+    if (!userId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setBmLoading(true);
+    try {
+      if (bookmarked) {
+        const { error } = await supabase
+          .from("bookmarks")
+          .delete()
+          .eq("user_id", userId)
+          .eq("article_slug", slug);
+
+        if (error) throw error;
+        setBookmarked(false);
+      } else {
+        const { error } = await supabase.from("bookmarks").insert({
+          user_id: userId,
+          article_slug: slug,
+          article_title: article?.title ?? null,
+        });
+
+        if (error) throw error;
+        setBookmarked(true);
+      }
+    } catch (e) {
+      console.error("toggle bookmark error:", e);
+    } finally {
+      setBmLoading(false);
+    }
+  }
 
   if (error) {
     return (
@@ -214,9 +332,7 @@ export default function NewsSlugPage() {
         <div className="flex items-center gap-4 pb-6 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <span className="text-sm">by</span>
-            <span className="inline-flex items-center gap-2 text-sm font-bold text-purple-400">
-              <span>{authorName}</span>
-            </span>
+            <span className="text-sm font-bold text-purple-400">{authorName}</span>
           </div>
 
           <div className="text-sm text-zinc-500">{formatDate(article.publishedAt)}</div>
@@ -224,7 +340,13 @@ export default function NewsSlugPage() {
 
         {/* Actions */}
         <div className="flex items-center gap-3 py-6 border-b border-zinc-800">
-          <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 hover:bg-zinc-900 transition">
+          {/* Share */}
+          <button
+            onClick={onShare}
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 hover:bg-zinc-900 transition"
+            aria-label="Share"
+            type="button"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
@@ -235,8 +357,24 @@ export default function NewsSlugPage() {
             </svg>
           </button>
 
-          <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 hover:bg-zinc-900 transition">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Bookmark */}
+          <button
+            onClick={toggleBookmark}
+            disabled={bmLoading}
+            className={[
+              "flex items-center justify-center w-10 h-10 rounded-lg border transition",
+              bmLoading ? "opacity-60 cursor-not-allowed" : "",
+              bookmarked ? "border-purple-500/60 bg-purple-500/10" : "border-zinc-700 hover:bg-zinc-900",
+            ].join(" ")}
+            aria-label={bookmarked ? "Remove bookmark" : "Save bookmark"}
+            type="button"
+          >
+            <svg
+              className="w-5 h-5"
+              fill={bookmarked ? "currentColor" : "none"}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -246,7 +384,7 @@ export default function NewsSlugPage() {
             </svg>
           </button>
 
-          {/* ✅ Comments link (no fake count) */}
+          {/* Comments */}
           <div className="ml-auto">
             <Link
               href="#comments"
@@ -260,7 +398,9 @@ export default function NewsSlugPage() {
                   d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                 />
               </svg>
-              <span className="font-semibold">Comments</span>
+
+              <span className="font-bold">{commentCount ?? "—"}</span>
+              <span className="text-zinc-400">Comments</span>
             </Link>
           </div>
         </div>
@@ -289,7 +429,7 @@ export default function NewsSlugPage() {
           </div>
         )}
 
-        {/* ✅ Author card (real author, not category) */}
+        {/* Author card */}
         <div className="flex items-start gap-4 py-6 border-b border-zinc-800">
           <div className="relative h-12 w-12 shrink-0">
             <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
