@@ -16,6 +16,7 @@ type Article = {
   publishedAt: string | null;
   coverImage?: any;
   category?: any;
+  // future: author?: any;
 };
 
 function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
@@ -25,17 +26,9 @@ function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
   return base ? `${base}${maybeRelativeUrl}` : maybeRelativeUrl;
 }
 
-/**
- * Robust media picker:
- * - Strapi v4 (data.attributes.url + formats)
- * - Strapi v5 (url + formats)
- * - array / single
- * - prefers largest available format
- */
 function pickBestUrlFromAttributes(attrs: any): string | null {
   if (!attrs) return null;
 
-  // Prefer formats: large > medium > small > thumbnail > original
   const formats = attrs.formats;
   const tryKeys = ["large", "medium", "small", "thumbnail"];
 
@@ -55,24 +48,19 @@ function pickBestUrlFromAttributes(attrs: any): string | null {
 function pickMediaUrl(media: any): string | null {
   if (!media) return null;
 
-  // If array -> first
   if (Array.isArray(media)) return pickMediaUrl(media[0]);
 
-  // Strapi v5 often: { url, formats? }
   if (media && typeof media === "object") {
     if (typeof media.url === "string") {
-      // Try formats if present on v5-ish object
       const best = pickBestUrlFromAttributes(media);
       return best ?? absolutizeStrapiUrl(media.url);
     }
   }
 
-  // Strapi v4: { data: { attributes: { url, formats } } }
   const v4attrs = media?.data?.attributes;
   const v4best = pickBestUrlFromAttributes(v4attrs);
   if (v4best) return v4best;
 
-  // Strapi v4 array: { data: [{ attributes: ... }] }
   const v4arrAttrs = media?.data?.[0]?.attributes;
   const v4arrBest = pickBestUrlFromAttributes(v4arrAttrs);
   if (v4arrBest) return v4arrBest;
@@ -101,10 +89,8 @@ function formatDate(iso: string | null) {
 }
 
 function getArticleCategory(a: any) {
-  // v5 style (your API already seems like this)
   if (a?.category && typeof a.category === "object") return a.category;
 
-  // v4 style fallback
   const v4 = a?.category?.data?.attributes;
   if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 };
 
@@ -163,10 +149,10 @@ export default function NewsSlugPage() {
     return pickMediaUrl(c);
   }, [article]);
 
-  // Debug helper: ako želiš vidjeti URL u konzoli
-  useEffect(() => {
-    if (coverUrl) console.log("coverUrl:", coverUrl);
-  }, [coverUrl]);
+  // ✅ Author (temporary until Strapi author exists)
+  const authorName = "FullPort Staff";
+  const authorInitial = authorName.charAt(0).toUpperCase();
+  const authorBio = "Covering crypto news, memecoins, and on-chain stories.";
 
   if (error) {
     return (
@@ -200,9 +186,8 @@ export default function NewsSlugPage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      {/* Article Container - Max width like Verge */}
       <div className="mx-auto max-w-[680px] px-4 sm:px-6 pt-8 pb-24">
-        {/* Category Pills at top */}
+        {/* Category */}
         <div className="mb-6 flex flex-wrap items-center gap-2">
           {category && (
             <Link
@@ -217,34 +202,27 @@ export default function NewsSlugPage() {
           )}
         </div>
 
-        {/* Article Title */}
-        <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-4">
-          {article.title}
-        </h1>
+        {/* Title */}
+        <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-4">{article.title}</h1>
 
-        {/* Subtitle/Excerpt */}
+        {/* Excerpt */}
         {article.excerpt && (
-          <p className="text-xl text-zinc-400 leading-relaxed mb-6 font-medium">
-            {article.excerpt}
-          </p>
+          <p className="text-xl text-zinc-400 leading-relaxed mb-6 font-medium">{article.excerpt}</p>
         )}
 
-        {/* Author and Meta info */}
+        {/* Author + Date */}
         <div className="flex items-center gap-4 pb-6 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <span className="text-sm">by</span>
-            <button className="inline-flex items-center gap-1 text-sm font-bold text-purple-400 hover:text-purple-300 transition">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>{category?.name || "FullPort Staff"}</span>
-            </button>
+            <span className="inline-flex items-center gap-2 text-sm font-bold text-purple-400">
+              <span>{authorName}</span>
+            </span>
           </div>
 
           <div className="text-sm text-zinc-500">{formatDate(article.publishedAt)}</div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Actions */}
         <div className="flex items-center gap-3 py-6 border-b border-zinc-800">
           <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 hover:bg-zinc-900 transition">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -268,6 +246,7 @@ export default function NewsSlugPage() {
             </svg>
           </button>
 
+          {/* ✅ Comments link (no fake count) */}
           <div className="ml-auto">
             <Link
               href="#comments"
@@ -281,13 +260,12 @@ export default function NewsSlugPage() {
                   d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                 />
               </svg>
-              <span className="font-bold">8</span>
-              <span className="text-zinc-400">Comments (All New)</span>
+              <span className="font-semibold">Comments</span>
             </Link>
           </div>
         </div>
 
-        {/* Cover Image - Full width */}
+        {/* Cover */}
         {coverUrl ? (
           <div className="my-8 -mx-4 sm:-mx-6">
             <div className="relative aspect-[16/9] bg-zinc-900 overflow-hidden">
@@ -297,7 +275,6 @@ export default function NewsSlugPage() {
                 className="w-full h-full object-cover"
                 loading="eager"
                 onError={(e) => {
-                  // ako CDN ili URL faila, bar da vidiš da je to problem
                   console.error("Cover image failed to load:", coverUrl);
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}
@@ -312,39 +289,28 @@ export default function NewsSlugPage() {
           </div>
         )}
 
-        {/* Author Card Below Image */}
+        {/* ✅ Author card (real author, not category) */}
         <div className="flex items-start gap-4 py-6 border-b border-zinc-800">
           <div className="relative h-12 w-12 shrink-0">
             <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
-              {(category?.name || "F")[0]}
+              {authorInitial}
             </div>
           </div>
 
           <div className="flex-1">
-            <button className="inline-flex items-center gap-1 text-base font-bold text-purple-400 hover:text-purple-300 transition mb-1">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>{category?.name || "FullPort Staff"}</span>
-            </button>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              {category?.description || "Covering crypto news, memecoins, and on-chain stories."}
-            </p>
+            <div className="text-base font-bold text-purple-400 mb-1">{authorName}</div>
+            <p className="text-sm text-zinc-400 leading-relaxed">{authorBio}</p>
           </div>
         </div>
 
-        {/* Article Content */}
+        {/* Content */}
         <article className="prose prose-invert prose-lg max-w-none mt-8">
           <div className="text-zinc-200 leading-relaxed">
-            {Array.isArray(article.content) ? (
-              <StrapiBlocks blocks={article.content} />
-            ) : (
-              <p className="text-zinc-400">No content available.</p>
-            )}
+            {Array.isArray(article.content) ? <StrapiBlocks blocks={article.content} /> : <p className="text-zinc-400">No content available.</p>}
           </div>
         </article>
 
-        {/* Comments Section */}
+        {/* Comments */}
         <div id="comments" className="mt-16">
           <Comments slug={slug} />
         </div>

@@ -11,6 +11,7 @@ import HowToSection from "@/app/components/HowToSection";
 import PumpfunSection from "@/app/components/PumpfunSection";
 import BonkfunSection from "@/app/components/BonkfunSection";
 import EditorsPickSection from "@/app/components/EditorsPickSection";
+import Footer from "@/app/components/Footer";
 
 import { fetchHomeData, firstCoverUrl, type Article } from "@/app/lib/strapi";
 
@@ -127,7 +128,7 @@ export default async function HomePage() {
     needles: ["bonkfun", "bonk fun", "bonk", "memecoin", "memecoins"],
   });
 
-  // 3) Editor's Pick bucket (NEW)
+  // 3) Editor's Pick bucket
   const editorsPick = buildBucket({
     categories,
     allArticles: articles,
@@ -153,7 +154,7 @@ export default async function HomePage() {
   });
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-black text-white flex min-h-[100dvh] flex-col">
       {/* Subtle glows */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[140px]" />
@@ -163,7 +164,8 @@ export default async function HomePage() {
       {/* Top nav */}
       <TopNav categories={categories} />
 
-      <div className="relative mx-auto max-w-[1440px] px-4 lg:px-8 py-8">
+      {/* Page content */}
+      <div className="relative mx-auto w-full max-w-[1440px] flex-1 px-4 py-8 lg:px-8">
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
@@ -223,7 +225,7 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* 5) EDITOR'S PICK (NEW) */}
+        {/* 5) EDITOR'S PICK */}
         {editorsPick.featured ? (
           <section className="mb-12">
             <EditorsPickSection
@@ -277,6 +279,9 @@ export default async function HomePage() {
         {/* 7) LATEST */}
         <LatestFeed articles={latestFeed} />
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* Bottom nav only on mobile */}
       <div className="lg:hidden">

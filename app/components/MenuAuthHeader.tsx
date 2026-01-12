@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 function getDisplayName(user: any) {
@@ -26,9 +27,11 @@ function initialsFrom(text: string) {
 
 export default function MenuAuthHeader({ onClose }: { onClose: () => void }) {
   const supabase = useMemo(() => createSupabaseBrowser(), []);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -60,9 +63,25 @@ export default function MenuAuthHeader({ onClose }: { onClose: () => void }) {
     [displayName, email]
   );
 
+  async function handleLogout() {
+    if (busy) return;
+    setBusy(true);
+
+    // 1) client sign out -> instant UI update
+    await supabase.auth.signOut();
+
+    // 2) also hit server route to clear SSR cookies (best practice)
+    try {
+      await fetch("/auth/signout", { method: "POST" });
+    } catch {}
+
+    onClose();
+    router.push("/");
+    router.refresh(); // forces server components to re-render logged-out state
+  }
+
   if (loading) return null;
 
-  // LOGGED OUT
   if (!user) {
     return (
       <div className="flex items-center gap-3 text-sm font-semibold">
@@ -77,7 +96,6 @@ export default function MenuAuthHeader({ onClose }: { onClose: () => void }) {
     );
   }
 
-  // LOGGED IN
   return (
     <div className="flex min-w-0 items-center gap-3">
       <Link
@@ -95,12 +113,14 @@ export default function MenuAuthHeader({ onClose }: { onClose: () => void }) {
         </div>
       </Link>
 
-      <Link
-        href="/auth/signout"
-        className="shrink-0 rounded-full border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-white/90 hover:bg-zinc-800 transition"
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={busy}
+        className="shrink-0 rounded-full border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-white/90 hover:bg-zinc-800 disabled:opacity-60 transition"
       >
-        Log out
-      </Link>
+        {busy ? "Logging out..." : "Log out"}
+      </button>
     </div>
   );
 }

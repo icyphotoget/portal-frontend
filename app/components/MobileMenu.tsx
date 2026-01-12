@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import type { Category } from "@/app/components/TopNav";
 import MenuAuthHeader from "@/app/components/MenuAuthHeader";
 
@@ -37,6 +37,21 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
   const toggleSection = (key: string) => {
     setExpanded((p) => (p === key ? null : key));
   };
+
+  // ✅ Keep only valid categories (no empty names/slugs, no duplicates)
+  const cleanCategories = useMemo(() => {
+    const seen = new Set<string>();
+    return (categories ?? [])
+      .filter((c) => {
+        const name = (c?.name ?? "").trim();
+        const slug = (c?.slug ?? "").trim();
+        if (!name || !slug) return false;
+        if (seen.has(slug)) return false;
+        seen.add(slug);
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories]);
 
   // Close on ESC + click outside
   useEffect(() => {
@@ -115,7 +130,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
               </button>
             </div>
 
-            {/* Search */}
+            {/* Search (UI only for now) */}
             <div className="px-4 py-3">
               <div className="relative">
                 <input
@@ -137,83 +152,47 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
             {/* Items */}
             <div className="max-h-[60vh] overflow-y-auto px-4 pb-4">
               <div className="space-y-3">
-                {/* API categories */}
-                {categories.map((c) => {
-                  const isExpanded = expanded === c.slug;
-                  return (
-                    <div key={c.id} className="rounded-2xl border border-white/10 bg-white/5">
-                      <button
-                        onClick={() => toggleSection(c.slug)}
-                        className="flex w-full items-center justify-between px-4 py-3 text-left"
-                      >
-                        <span className="text-base font-extrabold text-white">{c.name}</span>
-                        <Plus open={isExpanded} />
-                      </button>
+                {cleanCategories.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/70">
+                    No categories yet.
+                  </div>
+                ) : (
+                  cleanCategories.map((c) => {
+                    const isExpanded = expanded === c.slug;
+                    return (
+                      <div key={c.id} className="rounded-2xl border border-white/10 bg-white/5">
+                        <button
+                          onClick={() => toggleSection(c.slug)}
+                          className="flex w-full items-center justify-between px-4 py-3 text-left"
+                        >
+                          <span className="text-base font-extrabold text-white">{c.name}</span>
+                          <Plus open={isExpanded} />
+                        </button>
 
-                      {isExpanded && (
-                        <div className="px-4 pb-3">
-                          <div className="space-y-2">
-                            <Link
-                              href={`/category/${c.slug}`}
-                              onClick={close}
-                              className="block rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white transition"
-                            >
-                              View all
-                            </Link>
-                            <Link
-                              href={`/category/${c.slug}?tab=trending`}
-                              onClick={close}
-                              className="block rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white transition"
-                            >
-                              Trending
-                            </Link>
+                        {isExpanded && (
+                          <div className="px-4 pb-3">
+                            <div className="space-y-2">
+                              <Link
+                                href={`/category/${c.slug}`}
+                                onClick={close}
+                                className="block rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white transition"
+                              >
+                                View all
+                              </Link>
+                              <Link
+                                href={`/category/${c.slug}?tab=trending`}
+                                onClick={close}
+                                className="block rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white transition"
+                              >
+                                Trending
+                              </Link>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Static */}
-                {[
-                  { key: "crypto", label: "Crypto" },
-                  { key: "memecoins", label: "Memecoins" },
-                  { key: "nft", label: "NFT" },
-                  { key: "trading", label: "Trading" },
-                ].map((sec) => {
-                  const isExpanded = expanded === sec.key;
-                  return (
-                    <div key={sec.key} className="rounded-2xl border border-white/10 bg-white/5">
-                      <button
-                        onClick={() => toggleSection(sec.key)}
-                        className="flex w-full items-center justify-between px-4 py-3 text-left"
-                      >
-                        <span className="text-base font-extrabold text-white">{sec.label}</span>
-                        <Plus open={isExpanded} />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="px-4 pb-3">
-                          <Link
-                            href={`/${sec.key}`}
-                            onClick={close}
-                            className="block rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white transition"
-                          >
-                            View {sec.label}
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* About */}
-                <div className="rounded-2xl border border-white/10 bg-white/5">
-                  <Link href="/about" onClick={close} className="flex items-center justify-between px-4 py-3">
-                    <span className="text-base font-extrabold text-white">About</span>
-                    <Plus open={false} />
-                  </Link>
-                </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -250,7 +229,7 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
                   </button>
                 </div>
 
-                {/* Search */}
+                {/* Search (UI only for now) */}
                 <div className="px-4 pb-4">
                   <div className="relative">
                     <input
@@ -273,80 +252,47 @@ export default function MobileMenu({ categories }: { categories: Category[] }) {
               {/* Items */}
               <div className="h-[calc(100vh-132px)] overflow-y-auto bg-zinc-950 px-4 pb-10">
                 <nav className="space-y-3 pt-3">
-                  {categories.map((c) => {
-                    const isExpanded = expanded === c.slug;
-                    return (
-                      <div key={c.id} className="rounded-2xl border border-white/10 bg-zinc-900/60">
-                        <button
-                          onClick={() => toggleSection(c.slug)}
-                          className="flex w-full items-center justify-between px-4 py-4 text-left"
-                        >
-                          <span className="text-[20px] font-extrabold tracking-tight text-white">{c.name}</span>
-                          <Plus open={isExpanded} />
-                        </button>
+                  {cleanCategories.length === 0 ? (
+                    <div className="rounded-2xl border border-white/10 bg-zinc-900/60 px-4 py-4 text-sm text-white/70">
+                      No categories yet.
+                    </div>
+                  ) : (
+                    cleanCategories.map((c) => {
+                      const isExpanded = expanded === c.slug;
+                      return (
+                        <div key={c.id} className="rounded-2xl border border-white/10 bg-zinc-900/60">
+                          <button
+                            onClick={() => toggleSection(c.slug)}
+                            className="flex w-full items-center justify-between px-4 py-4 text-left"
+                          >
+                            <span className="text-[20px] font-extrabold tracking-tight text-white">{c.name}</span>
+                            <Plus open={isExpanded} />
+                          </button>
 
-                        {isExpanded && (
-                          <div className="px-4 pb-4">
-                            <div className="space-y-2">
-                              <Link
-                                href={`/category/${c.slug}`}
-                                onClick={close}
-                                className="block rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-white/85 hover:bg-zinc-900 hover:text-white transition"
-                              >
-                                View all
-                              </Link>
-                              <Link
-                                href={`/category/${c.slug}?tab=trending`}
-                                onClick={close}
-                                className="block rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-white/85 hover:bg-zinc-900 hover:text-white transition"
-                              >
-                                Trending
-                              </Link>
+                          {isExpanded && (
+                            <div className="px-4 pb-4">
+                              <div className="space-y-2">
+                                <Link
+                                  href={`/category/${c.slug}`}
+                                  onClick={close}
+                                  className="block rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-white/85 hover:bg-zinc-900 hover:text-white transition"
+                                >
+                                  View all
+                                </Link>
+                                <Link
+                                  href={`/category/${c.slug}?tab=trending`}
+                                  onClick={close}
+                                  className="block rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-white/85 hover:bg-zinc-900 hover:text-white transition"
+                                >
+                                  Trending
+                                </Link>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {[
-                    { key: "crypto", label: "Crypto" },
-                    { key: "memecoins", label: "Memecoins" },
-                    { key: "nft", label: "NFT" },
-                    { key: "trading", label: "Trading" },
-                  ].map((sec) => {
-                    const isExpanded = expanded === sec.key;
-                    return (
-                      <div key={sec.key} className="rounded-2xl border border-white/10 bg-zinc-900/60">
-                        <button
-                          onClick={() => toggleSection(sec.key)}
-                          className="flex w-full items-center justify-between px-4 py-4 text-left"
-                        >
-                          <span className="text-[20px] font-extrabold tracking-tight text-white">{sec.label}</span>
-                          <Plus open={isExpanded} />
-                        </button>
-
-                        {isExpanded && (
-                          <div className="px-4 pb-4">
-                            <Link
-                              href={`/${sec.key}`}
-                              onClick={close}
-                              className="block rounded-xl border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm font-semibold text-white/85 hover:bg-zinc-900 hover:text-white transition"
-                            >
-                              View {sec.label}
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  <div className="rounded-2xl border border-white/10 bg-zinc-900/60">
-                    <Link href="/about" onClick={close} className="flex items-center justify-between px-4 py-4">
-                      <span className="text-[20px] font-extrabold tracking-tight text-white">About</span>
-                      <Plus open={false} />
-                    </Link>
-                  </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </nav>
               </div>
             </div>
