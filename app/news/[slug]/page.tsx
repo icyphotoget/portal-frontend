@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import StrapiBlocks from "@/app/components/StrapiBlocks";
 import Comments from "@/app/components/Comments";
-import { supabase } from "@/app/lib/supabase/client";
+import { createSupabaseBrowser } from "@/app/lib/supabase/client";
+
 
 type Article = {
   id: number;
@@ -80,6 +81,8 @@ function getArticleCategory(a: any) {
 export default function NewsSlugPage() {
   const params = useParams();
   const slug = (params?.slug as string) ?? null;
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
+
 
   const [article, setArticle] = useState<Article | null>(null);
   const [error, setError] = useState<string | null>(null);
