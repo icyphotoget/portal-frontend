@@ -1,8 +1,10 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
+
 import { AuthProvider } from "@/app/providers/AuthProvider";
+import AnalyticsLoader from "@/app/components/AnalyticsLoader";
+import CookieBanner from "@/app/components/CookieBanner";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://fullportlabs.com"),
@@ -82,7 +84,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProvider>{children}</AuthProvider>
-        <Analytics />
+
+        {/* ✅ Vercel Analytics only after consent.analytics === true */}
+        <AnalyticsLoader />
+
+        {/* ✅ Cookie banner + manage settings */}
+        <CookieBanner />
       </body>
     </html>
   );

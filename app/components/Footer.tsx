@@ -1,5 +1,6 @@
 // app/components/Footer.tsx
 import Link from "next/link";
+import PrivacySettingsButton from "@/app/components/PrivacySettingsButton";
 
 export default function Footer() {
   return (
@@ -8,6 +9,7 @@ export default function Footer() {
         {/* Logo and Social Icons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
           <Link href="/" className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo-fullport.png"
               alt="FullPort"
@@ -18,17 +20,7 @@ export default function Footer() {
 
           {/* Social Icons */}
           <div className="flex items-center gap-3">
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition"
-              aria-label="Facebook"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-            </a>
+           
 
             <a
               href="https://twitter.com"
@@ -117,15 +109,15 @@ export default function Footer() {
         {/* Third Row - Legal Links */}
         <div className="mb-8">
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <button className="text-white hover:text-cyan-400 transition">
+            <PrivacySettingsButton className="text-white hover:text-cyan-400 transition">
               Manage Privacy Settings
-            </button>
+            </PrivacySettingsButton>
             <span className="text-zinc-700">|</span>
             <Link href="/terms" className="text-white hover:text-cyan-400 transition">
               Terms of Use
             </Link>
             <span className="text-zinc-700">|</span>
-            <Link href="/privacy" className="text-white hover:text-cyan-400 transition">
+            <Link href="/privacy-notice" className="text-white hover:text-cyan-400 transition">
               Privacy Notice
             </Link>
             <span className="text-zinc-700">|</span>
