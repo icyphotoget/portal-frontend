@@ -2,9 +2,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
+import { AuthProvider } from "@/app/providers/AuthProvider";
 
 export const metadata: Metadata = {
-  // ✅ promijeni u produkciji
   metadataBase: new URL("https://fullportlabs.com"),
 
   title: {
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     description: "Breaking crypto headlines, memecoins, and on-chain stories.",
     images: [
       {
-        url: "/og-home.jpg", // /public/og-home.jpg
+        url: "/og-home.jpg",
         width: 1200,
         height: 630,
         alt: "FullPort — Crypto News & Insights",
@@ -64,7 +64,6 @@ export const metadata: Metadata = {
     title: "FullPort",
     description: "Breaking crypto headlines, memecoins, and on-chain stories.",
     images: ["/og-home.jpg"],
-    // creator: "@yourtwitter", // opcionalno
   },
 
   icons: {
@@ -78,15 +77,11 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Analytics />
       </body>
     </html>
