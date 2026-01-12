@@ -1,44 +1,66 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { strapiFetch } from "@/app/lib/strapiClient";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 type Bookmark = {
   id: number;
-  article?: {
-    title: string;
-    slug: string;
-    excerpt?: string | null;
-    publishedAt?: string | null;
-  };
+  article_slug: string;
+  article_title: string | null;
+  created_at: string;
 };
 
 export default function BookmarksPage() {
-  const { user, ready } = useAuth();
+  const { user, loading } = useAuth();
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
+
   const [items, setItems] = useState<Bookmark[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+
+  async function load(uid: string) {
+    setListLoading(true);
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .select("id,article_slug,article_title,created_at")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+
+    if (error) console.error("load bookmarks error:", error);
+    setItems((data ?? []) as Bookmark[]);
+    setListLoading(false);
+  }
 
   useEffect(() => {
-    if (!ready) return;
-    if (!user) return;
+    if (loading) return;
+    if (!user?.id) return;
+    load(user.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, user?.id]);
 
-    setLoading(true);
-    strapiFetch<{ data: Bookmark[] }>("/api/bookmarks/me", { auth: true })
-      .then((d) => setItems(d.data ?? []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, [ready, user]);
-
-  if (!ready) return null;
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-black text-white">
+        <div className="mx-auto max-w-2xl px-4 py-10">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">Loading…</div>
+        </div>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
       <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-2xl px-4 py-10">
-          <h1 className="text-2xl font-bold">Bookmarks</h1>
-          <p className="mt-3 text-zinc-400">Login to see your saved articles.</p>
+          <h1 className="text-2xl font-extrabold">Bookmarks</h1>
+          <p className="mt-3 text-white/70">Please login to view bookmarks.</p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block rounded-xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10 transition"
+          >
+            Login
+          </Link>
         </div>
       </main>
     );
@@ -47,26 +69,35 @@ export default function BookmarksPage() {
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-bold">Bookmarks</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold">Bookmarks</h1>
+          <Link href="/" className="text-sm text-white/70 hover:text-white">
+            Home
+          </Link>
+        </div>
 
-        {loading ? (
-          <p className="mt-4 text-zinc-400">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="mt-4 text-zinc-400">No bookmarks yet.</p>
-        ) : (
-          <div className="mt-6 space-y-3">
-            {items.map((b) => (
-              <Link
-                key={b.id}
-                href={b.article?.slug ? `/news/${b.article.slug}` : "#"}
-                className="block rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
-              >
-                <div className="text-lg font-bold">{b.article?.title ?? "Untitled"}</div>
-                {b.article?.excerpt && <div className="mt-2 text-sm text-zinc-400">{b.article.excerpt}</div>}
-              </Link>
-            ))}
-          </div>
-        )}
+        <div className="mt-6">
+          {listLoading ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">Loading…</div>
+          ) : items.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+              No bookmarks yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {items.map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/news/${b.article_slug}`}
+                  className="block rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 transition"
+                >
+                  <div className="text-base font-bold">{b.article_title ?? b.article_slug}</div>
+                  <div className="mt-1 text-xs text-white/50">{new Date(b.created_at).toLocaleString()}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
