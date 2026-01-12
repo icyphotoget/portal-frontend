@@ -1,42 +1,59 @@
-import { supabase } from "@/app/lib/supabase"; // prilagodi path gdje ti je supabase client
+// app/lib/bookmarks.ts
+"use client";
 
-const STRAPI = process.env.NEXT_PUBLIC_STRAPI_URL;
+import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
-async function getAccessToken() {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
+export type BookmarkRow = {
+  id: number;
+  user_id: string;
+  article_slug: string;
+  article_title: string | null;
+  created_at: string;
+};
+
+export async function isBookmarked(userId: string, slug: string) {
+  const supabase = createSupabaseBrowser();
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("article_slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return !!data;
 }
 
-async function api(path: string, init?: RequestInit) {
-  if (!STRAPI) throw new Error("Missing NEXT_PUBLIC_STRAPI_URL");
-  const token = await getAccessToken();
-  if (!token) throw new Error("Not logged in (no Supabase session)");
-
-  const res = await fetch(`${STRAPI}/api${path}`, {
-    ...init,
-    headers: {
-      ...(init?.headers || {}),
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
+export async function addBookmark(userId: string, slug: string, title?: string | null) {
+  const supabase = createSupabaseBrowser();
+  const { error } = await supabase.from("bookmarks").insert({
+    user_id: userId,
+    article_slug: slug,
+    article_title: title ?? null,
   });
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-  return res.json();
+  if (error) throw error;
 }
 
-export async function getBookmarkStatus(articleId: number) {
-  return api(`/bookmarks/status?articleId=${articleId}`);
+export async function removeBookmark(userId: string, slug: string) {
+  const supabase = createSupabaseBrowser();
+  const { error } = await supabase
+    .from("bookmarks")
+    .delete()
+    .eq("user_id", userId)
+    .eq("article_slug", slug);
+
+  if (error) throw error;
 }
 
-export async function toggleBookmark(articleId: number) {
-  return api(`/bookmarks/toggle`, {
-    method: "POST",
-    body: JSON.stringify({ articleId }),
-  });
-}
+export async function listBookmarks(userId: string) {
+  const supabase = createSupabaseBrowser();
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select("id,user_id,article_slug,article_title,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
-export async function getMyBookmarks() {
-  return api(`/bookmarks/me`);
+  if (error) throw error;
+  return (data ?? []) as BookmarkRow[];
 }
