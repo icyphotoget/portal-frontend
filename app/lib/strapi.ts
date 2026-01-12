@@ -1,5 +1,4 @@
 // app/lib/strapi.ts
-
 import type { Category } from "@/app/components/TopNav";
 
 export type StrapiMedia = any;
@@ -25,7 +24,7 @@ export function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined)
 export function pickMediaUrl(media: any): string | null {
   if (!media) return null;
 
-  // Strapi v5
+  // Strapi v5 style: { url: "/uploads/..." }
   if (typeof media.url === "string") return absolutizeStrapiUrl(media.url);
 
   // Strapi v4: { data: { attributes: { url } } }
@@ -54,13 +53,77 @@ export function formatDate(iso: string | null) {
     .toUpperCase();
 }
 
+/** Normalizira Strapi relation (v4/v5) u Category ili null */
 export function getArticleCategory(a: any): Category | null {
-  if (a?.category && typeof a.category === "object") return a.category as Category;
+  if (!a) return null;
 
-  const v4 = a?.category?.data?.attributes;
-  if (v4?.name && v4?.slug) return { id: a.category.data.id ?? 0, ...v4 } as Category;
+  // Ako si već normalizirao (category je direktno objekt s name/slug)
+  const direct = a?.category;
+  if (direct?.name && direct?.slug) return direct as Category;
+
+  // v4/v5 relation: { data: { id, attributes: { name, slug, ... } } }
+  const rel = a?.category?.data;
+  const attrs = rel?.attributes;
+  if (attrs?.name && attrs?.slug) {
+    return { id: rel?.id ?? 0, ...attrs } as Category;
+  }
 
   return null;
+}
+
+/** Pomocni: izvuci attributes iz Strapi entity-a (v4/v5) */
+function entityAttrs<T = any>(entity: any): { id: number; attributes: T } | null {
+  if (!entity) return null;
+
+  // v4/v5 standard: { id, attributes }
+  if (typeof entity?.id === "number" && entity?.attributes && typeof entity.attributes === "object") {
+    return { id: entity.id, attributes: entity.attributes as T };
+  }
+
+  // ponekad već dođe "flattened"
+  if (typeof entity?.id === "number") {
+    const { id, ...rest } = entity;
+    return { id, attributes: rest as T };
+  }
+
+  return null;
+}
+
+function normalizeCategoryEntity(entity: any): Category | null {
+  const parsed = entityAttrs<any>(entity);
+  if (!parsed) return null;
+  const { id, attributes } = parsed;
+  if (!attributes?.name || !attributes?.slug) return null;
+  return { id, ...attributes } as Category;
+}
+
+function normalizeArticleEntity(entity: any): Article | null {
+  const parsed = entityAttrs<any>(entity);
+  if (!parsed) return null;
+
+  const { id, attributes } = parsed;
+
+  // Strapi fields
+  const title = attributes?.title ?? "";
+  const slug = attributes?.slug ?? "";
+  if (!title || !slug) return null;
+
+  const category = getArticleCategory(attributes);
+
+  // coverImage može biti u attributes.coverImage (relation/media)
+  // mi ga ostavljamo kako je, jer firstCoverUrl zna pročitati shape
+  const coverImage = attributes?.coverImage ?? null;
+
+  return {
+    id,
+    documentId: attributes?.documentId,
+    title,
+    slug,
+    excerpt: attributes?.excerpt ?? null,
+    publishedAt: attributes?.publishedAt ?? null,
+    coverImage,
+    category,
+  };
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -78,15 +141,22 @@ export async function fetchHomeData(baseUrl: string) {
     `&populate=coverImage&populate=category` +
     `&pagination[pageSize]=50`;
 
-  const categoriesUrl = `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
+  const categoriesUrl =
+    `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
 
+  // Strapi v4/v5: { data: [...] }
   const [articlesJson, categoriesJson] = await Promise.all([
-    fetchJson<{ data: Article[] }>(articlesUrl),
-    fetchJson<{ data: Category[] }>(categoriesUrl),
+    fetchJson<{ data: any[] }>(articlesUrl),
+    fetchJson<{ data: any[] }>(categoriesUrl),
   ]);
 
-  return {
-    articles: (articlesJson.data ?? []).filter(Boolean),
-    categories: (categoriesJson.data ?? []).filter(Boolean),
-  };
+  const articles = (articlesJson.data ?? [])
+    .map(normalizeArticleEntity)
+    .filter(Boolean) as Article[];
+
+  const categories = (categoriesJson.data ?? [])
+    .map(normalizeCategoryEntity)
+    .filter(Boolean) as Category[];
+
+  return { articles, categories };
 }

@@ -1,71 +1,19 @@
 // app/page.tsx
 import BottomNav from "@/app/components/BottomNav";
-import TopNav, { Category } from "@/app/components/TopNav";
+import TopNav from "@/app/components/TopNav";
 
 import HeroCard from "@/app/components/HeroCard";
 import TopStoriesList from "@/app/components/TopStoriesList";
 import MostPopularCard from "@/app/components/MostPopularCard";
 import LatestFeed from "@/app/components/LatestFeed";
-import HowToSection from "@/app/components/HowToSection";
 
 import PumpfunSection from "@/app/components/PumpfunSection";
 import BonkfunSection from "@/app/components/BonkfunSection";
 import EditorsPickSection from "@/app/components/EditorsPickSection";
+import HowToSection from "@/app/components/HowToSection";
 import Footer from "@/app/components/Footer";
 
-import { fetchHomeData, firstCoverUrl, type Article } from "@/app/lib/strapi";
-
-function pickCategory(categories: Category[], needles: string[]) {
-  const found = categories.find((c) => {
-    const n = (c?.name ?? "").toLowerCase().trim();
-    return needles.some((k) => n.includes(k));
-  });
-  return found ?? null;
-}
-
-function articleMatchesCategory(a: Article, cat: Category) {
-  const c: any = (a as any)?.category;
-  if (!c) return false;
-
-  // current shape: category?: Category | null
-  if (typeof c === "object" && "id" in c) return (c as Category).id === cat.id;
-
-  // sometimes strapi v4 relation shape
-  const relId = c?.data?.id;
-  return relId === cat.id;
-}
-
-function formatShortDate(iso: string | null) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
-}
-
-function buildBucket(params: {
-  categories: Category[];
-  allArticles: Article[];
-  heroFallback?: Article | null;
-  needles: string[];
-}) {
-  const { categories, allArticles, heroFallback, needles } = params;
-
-  const cat = pickCategory(categories, needles);
-  const candidates = cat ? allArticles.filter((a) => articleMatchesCategory(a, cat)) : [];
-  const chosen = (candidates.length ? candidates : allArticles.slice(0, 12)).slice(0, 6);
-
-  const featured = chosen[0] ?? heroFallback ?? null;
-  const list = chosen.slice(1, 5);
-
-  const imageUrl =
-    (featured ? firstCoverUrl(featured) : null) ??
-    (heroFallback ? firstCoverUrl(heroFallback) : null) ??
-    "https://picsum.photos/1200/800";
-
-  const seeAllHref = cat?.slug ? `/category/${cat.slug}` : "/news";
-
-  return { featured, list, imageUrl, seeAllHref };
-}
+import { fetchHomeData, type Article } from "@/app/lib/strapi";
 
 export default async function HomePage() {
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
@@ -83,7 +31,7 @@ export default async function HomePage() {
   }
 
   let articles: Article[] = [];
-  let categories: Category[] = [];
+  let categories: any[] = [];
 
   try {
     const data = await fetchHomeData(baseUrl);
@@ -112,47 +60,6 @@ export default async function HomePage() {
   const mostPopular = latest.slice(0, 6);
   const latestFeed = latest.slice(6);
 
-  // 1) Pumpfun bucket
-  const pumpfun = buildBucket({
-    categories,
-    allArticles: articles,
-    heroFallback: hero,
-    needles: ["pumpfun", "pump.fun", "pump fun", "memecoin", "memecoins", "launchpad"],
-  });
-
-  // 2) Bonkfun bucket
-  const bonkfun = buildBucket({
-    categories,
-    allArticles: articles,
-    heroFallback: hero,
-    needles: ["bonkfun", "bonk fun", "bonk", "memecoin", "memecoins"],
-  });
-
-  // 3) Editor's Pick bucket
-  const editorsPick = buildBucket({
-    categories,
-    allArticles: articles,
-    heroFallback: hero,
-    needles: [
-      "editor",
-      "editors",
-      "editor's pick",
-      "editors pick",
-      "featured",
-      "staff pick",
-      "staff picks",
-      "recommended",
-    ],
-  });
-
-  // 4) HowTo bucket
-  const howto = buildBucket({
-    categories,
-    allArticles: articles,
-    heroFallback: hero,
-    needles: ["how to", "how-to", "howto", "kako", "guide", "guides", "tutorial"],
-  });
-
   return (
     <main className="min-h-screen bg-black text-white flex min-h-[100dvh] flex-col">
       {/* Subtle glows */}
@@ -169,30 +76,19 @@ export default async function HomePage() {
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
-        {/* 2) PUMPFUN */}
-        {pumpfun.featured ? (
-          <section className="mb-12">
-            <PumpfunSection
-              label="PUMPFUN"
-              seeAllHref={pumpfun.seeAllHref}
-              featured={{
-                title: pumpfun.featured.title,
-                href: `/news/${pumpfun.featured.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(pumpfun.featured.publishedAt),
-                imageUrl: pumpfun.imageUrl,
-                imageAlt: pumpfun.featured.title,
-              }}
-              items={pumpfun.list.map((a) => ({
-                id: a.id,
-                title: a.title,
-                href: `/news/${a.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(a.publishedAt),
-              }))}
-            />
-          </section>
-        ) : null}
+        {/* 2) PUMPFUN (slug iz Strapi: pumpfun) */}
+        <section className="mb-12">
+          <PumpfunSection
+            label="PUMPFUN"
+            kicker="PUMP FUN"
+            // preporuka: umjesto /category/... koristi filter rutu
+            seeAllHref="/news?category=pumpfun"
+            categorySlug="pumpfun"
+            articles={articles}
+            bg="#BFE7C7" // retro izblijeđena zelena + grain je već u komponenti
+            takeItems={4}
+          />
+        </section>
 
         {/* 3) TOP STORIES + MOST POPULAR */}
         <section className="mb-12 grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
@@ -200,81 +96,43 @@ export default async function HomePage() {
           <MostPopularCard articles={mostPopular} />
         </section>
 
-        {/* 4) BONKFUN */}
-        {bonkfun.featured ? (
-          <section className="mb-12">
-            <BonkfunSection
-              label="BONKFUN"
-              seeAllHref={bonkfun.seeAllHref}
-              featured={{
-                title: bonkfun.featured.title,
-                href: `/news/${bonkfun.featured.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(bonkfun.featured.publishedAt),
-                imageUrl: bonkfun.imageUrl,
-                imageAlt: bonkfun.featured.title,
-              }}
-              items={bonkfun.list.map((a) => ({
-                id: a.id,
-                title: a.title,
-                href: `/news/${a.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(a.publishedAt),
-              }))}
-            />
-          </section>
-        ) : null}
+        {/* 4) BONKFUN (slug iz Strapi: bonkfun) */}
+        <section className="mb-12">
+          <BonkfunSection
+            label="BONKFUN"
+            kicker="BONK FUN"
+            seeAllHref="/news?category=bonkfun"
+            categorySlug="bonkfun"
+            articles={articles}
+            takeItems={4}
+          />
+        </section>
 
-        {/* 5) EDITOR'S PICK */}
-        {editorsPick.featured ? (
-          <section className="mb-12">
-            <EditorsPickSection
-              label="EDITOR'S PICK"
-              seeAllHref={editorsPick.seeAllHref}
-              featured={{
-                title: editorsPick.featured.title,
-                href: `/news/${editorsPick.featured.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(editorsPick.featured.publishedAt),
-                imageUrl: editorsPick.imageUrl,
-                imageAlt: editorsPick.featured.title,
-              }}
-              items={editorsPick.list.map((a) => ({
-                id: a.id,
-                title: a.title,
-                href: `/news/${a.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(a.publishedAt),
-              }))}
-            />
-          </section>
-        ) : null}
+        {/* 5) EDITOR'S PICK
+            ⚠️ OVO NE BI TREBALO BITI KATEGORIJA ako želiš manual pick.
+            Najbolje: boolean field editorsPick u Strapi i onda filtriranje po tom.
+            Ali ako ti je trenutno kategorija (npr slug "editors-pick"), stavi taj slug dolje.
+        */}
+        <section className="mb-12">
+          <EditorsPickSection
+            label="EDITOR'S PICK"
+            seeAllHref="/news?editorsPick=true"
+            articles={articles}
+            // ako je kod tebe editors pick po kategoriji, dodaj u komponentu categorySlug pattern kao PumpfunSection
+          />
+        </section>
 
-        {/* 6) HOW TO */}
-        {howto.featured ? (
-          <section className="mb-12">
-            <HowToSection
-              label="HOW TO?"
-              seeAllHref={howto.seeAllHref}
-              featured={{
-                title: howto.featured.title,
-                href: `/news/${howto.featured.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(howto.featured.publishedAt),
-                imageUrl: howto.imageUrl,
-                imageAlt: howto.featured.title,
-              }}
-              items={howto.list.map((a) => ({
-                id: a.id,
-                title: a.title,
-                href: `/news/${a.slug}`,
-                author: "FULLPORT",
-                date: formatShortDate(a.publishedAt),
-                comments: undefined,
-              }))}
-            />
-          </section>
-        ) : null}
+        {/* 6) HOW TO (slug iz Strapi: how-to) */}
+        <section className="mb-12">
+          <HowToSection
+            label="HOW TO?"
+            kicker="HOW TO"
+            seeAllHref="/news?category=how-to"
+            categorySlug="how-to"
+            articles={articles}
+            takeItems={4}
+          />
+        </section>
 
         {/* 7) LATEST */}
         <LatestFeed articles={latestFeed} />

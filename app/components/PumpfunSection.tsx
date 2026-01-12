@@ -1,42 +1,67 @@
 // app/components/PumpfunSection.tsx
 import Link from "next/link";
-
-export type PumpfunFeatured = {
-  title: string;
-  href: string;
-  author?: string;
-  date?: string;
-  imageUrl?: string | null;
-  imageAlt?: string;
-};
-
-export type PumpfunItem = {
-  id: number | string;
-  title: string;
-  href: string;
-  author?: string;
-  date?: string;
-  comments?: number;
-};
+import type { Article } from "@/app/lib/strapi";
+import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi";
 
 export default function PumpfunSection({
   label = "PUMPFUN",
   kicker = "PUMP FUN",
   seeAllHref = "/news",
-  featured,
-  items,
-  bg = "#c9b6ff", // malo drugačiji vibe, promijeni ako želiš
+  bg = "#BFE7C7", // ✅ retro izblijeđena zelena (soft mint)
+  categorySlug = "pumpfun", // ✅ MATCH Strapi slug
+  articles,
+  takeItems = 4,
 }: {
-  label?: string; // vertikalni tekst desno
-  kicker?: string; // mali tekst gore lijevo u kartici
+  label?: string;
+  kicker?: string;
   seeAllHref?: string;
-  featured: PumpfunFeatured;
-  items: PumpfunItem[];
   bg?: string;
+
+  // data:
+  categorySlug?: string;
+  articles: Article[];
+  takeItems?: number;
 }) {
+  function buildHref(a: Article) {
+    return `/news/${a.slug}`;
+  }
+
+  function pickAuthor(a: any): string | undefined {
+    // prilagodi ako ti je drugačije u Strapi
+    return a?.author?.name ?? a?.author ?? a?.byline ?? undefined;
+  }
+
+  // 1) filtriraj članke po kategoriji
+  const pumpArticles = (articles ?? []).filter((a) => {
+    const cat = getArticleCategory(a);
+    return cat?.slug === categorySlug;
+  });
+
+  if (!pumpArticles.length) return null;
+
+  // 2) featured = prvi iz filtriranih
+  const hero = pumpArticles[0];
+
+  const featured = {
+    title: hero.title,
+    href: buildHref(hero),
+    author: pickAuthor(hero),
+    date: hero.publishedAt ? formatDate(hero.publishedAt) : undefined,
+    imageUrl: firstCoverUrl(hero),
+    imageAlt: hero.title,
+  };
+
+  // 3) items = sljedećih X
+  const items = pumpArticles.slice(1, 1 + takeItems).map((a) => ({
+    id: a.id,
+    title: a.title,
+    href: buildHref(a),
+    author: pickAuthor(a),
+    date: a.publishedAt ? formatDate(a.publishedAt) : undefined,
+  }));
+
   return (
     <div className="relative">
-      {/* Wrapper that creates the right gutter space for vertical text */}
       <div className="relative mx-auto max-w-[1100px] pr-14 sm:pr-16 lg:pr-20">
         {/* Vertical label (outside the card) - RIGHT SIDE */}
         <div className="pointer-events-none absolute right-0 top-0 h-full">
@@ -49,8 +74,6 @@ export default function PumpfunSection({
                 "text-[64px] sm:text-[84px] lg:text-[110px]",
                 "leading-none",
                 "[writing-mode:vertical-rl]",
-                // na desnoj strani ne treba rotate-180; ali želimo da se čita odozgo prema dolje:
-                // vertikal-rl default ide top->bottom, pa je ok bez rotacije
               ].join(" ")}
             >
               {label}
@@ -63,8 +86,27 @@ export default function PumpfunSection({
           className="relative overflow-hidden rounded-[22px] text-black"
           style={{ background: bg }}
         >
+          {/* ✅ Retro paper/grain overlay (no images) */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-multiply"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 4px)," +
+                "repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 6px)",
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.10]"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(0,0,0,0.12) 1px, transparent 1px)",
+              backgroundSize: "3px 3px",
+            }}
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10" />
+
           {/* top row */}
-          <div className="flex items-center justify-between px-5 sm:px-6 lg:px-8 pt-5">
+          <div className="relative flex items-center justify-between px-5 sm:px-6 lg:px-8 pt-5">
             <div className="flex items-center gap-3">
               <span className="h-5 w-[3px] rounded-full bg-black/80" />
               <span className="text-xs font-extrabold uppercase tracking-[0.22em]">
@@ -80,7 +122,7 @@ export default function PumpfunSection({
             </Link>
           </div>
 
-          <div className="px-5 sm:px-6 lg:px-8 pb-6 pt-4">
+          <div className="relative px-5 sm:px-6 lg:px-8 pb-6 pt-4">
             {/* Featured title */}
             <Link href={featured.href} className="block">
               <h2 className="max-w-[920px] text-[30px] sm:text-[40px] lg:text-[50px] font-black leading-[1.08] tracking-tight hover:opacity-90">
@@ -127,17 +169,11 @@ export default function PumpfunSection({
                           {it.title}
                         </div>
 
-                        {(it.author || it.date || typeof it.comments === "number") && (
+                        {(it.author || it.date) && (
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-75">
                             {it.author ? <span>{it.author}</span> : null}
                             {it.author && it.date ? <span>•</span> : null}
                             {it.date ? <span>{it.date}</span> : null}
-                            {typeof it.comments === "number" ? (
-                              <>
-                                <span>•</span>
-                                <span>{it.comments}</span>
-                              </>
-                            ) : null}
                           </div>
                         )}
                       </div>

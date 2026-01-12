@@ -1,30 +1,69 @@
 // app/components/EditorsPickSection.tsx
 import Link from "next/link";
+import type { Article } from "@/app/lib/strapi";
+import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi";
 
-type Featured = {
-  title: string;
-  href: string;
-  author: string;
-  date: string;
-  imageUrl: string;
-  imageAlt: string;
-};
+export default function EditorsPickSection({
+  label = "EDITOR'S PICK",
+  seeAllHref = "/news",
+  articles,
+  takeItems = 4,
 
-type Item = {
-  id: number;
-  title: string;
-  href: string;
-  author: string;
-  date: string;
-};
+  // opcija A: Editors Pick kao kategorija (npr. "editors-pick")
+  categorySlug,
 
-export default function EditorsPickSection(props: {
-  label: string;
-  seeAllHref: string;
-  featured: Featured;
-  items: Item[];
+  // opcija B: manual flag u Strapi (preporuka)
+  // u Article dodaj boolean field: editorsPick
+  useEditorsPickFlag = false,
+}: {
+  label?: string;
+  seeAllHref?: string;
+  articles: Article[];
+  takeItems?: number;
+
+  categorySlug?: string; // npr. "editors-pick"
+  useEditorsPickFlag?: boolean; // true => filtrira po (a as any).editorsPick === true
 }) {
-  const { label, seeAllHref, featured, items } = props;
+  function buildHref(a: Article) {
+    return `/news/${a.slug}`;
+  }
+
+  function pickAuthor(a: any): string {
+    return a?.author?.name ?? a?.author ?? a?.byline ?? "FULLPORT";
+  }
+
+  const picks = (articles ?? []).filter((a) => {
+    if (useEditorsPickFlag) return (a as any)?.editorsPick === true;
+
+    if (categorySlug) {
+      const cat = getArticleCategory(a);
+      return cat?.slug === categorySlug;
+    }
+
+    // ako nisi zadao ni flag ni category, nemoj random prikazivat
+    return false;
+  });
+
+  if (!picks.length) return null;
+
+  const hero = picks[0];
+
+  const featured = {
+    title: hero.title,
+    href: buildHref(hero),
+    author: pickAuthor(hero),
+    date: hero.publishedAt ? formatDate(hero.publishedAt) : "",
+    imageUrl: firstCoverUrl(hero) ?? "https://picsum.photos/1200/800",
+    imageAlt: hero.title,
+  };
+
+  const items = picks.slice(1, 1 + takeItems).map((a) => ({
+    id: a.id,
+    title: a.title,
+    href: buildHref(a),
+    author: pickAuthor(a),
+    date: a.publishedAt ? formatDate(a.publishedAt) : "",
+  }));
 
   return (
     <div className="rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden">
@@ -51,6 +90,7 @@ export default function EditorsPickSection(props: {
         <Link href={featured.href} className="group block">
           <article className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
             <div className="relative aspect-[16/9] w-full overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={featured.imageUrl}
                 alt={featured.imageAlt}
