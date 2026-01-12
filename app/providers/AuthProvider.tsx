@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 type AuthUser = any;
@@ -8,6 +14,7 @@ type AuthUser = any;
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
+  ready: boolean; // ✅ bitno za postojeće hookove
   accessToken: string | null;
   signOut: () => Promise<void>;
 };
@@ -28,7 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.getSession();
       if (!mounted) return;
 
-      if (error) console.error("getSession error:", error);
+      if (error) {
+        console.error("supabase getSession error:", error);
+      }
 
       setUser(data.session?.user ?? null);
       setAccessToken(data.session?.access_token ?? null);
@@ -37,11 +46,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     boot();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setAccessToken(session?.access_token ?? null);
-      setLoading(false);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        setAccessToken(session?.access_token ?? null);
+        setLoading(false);
+      }
+    );
 
     return () => {
       mounted = false;
@@ -53,19 +64,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       loading,
+      ready: !loading, // ✅ ovo rješava TS error
       accessToken,
       signOut: async () => {
         await supabase.auth.signOut();
+        setUser(null);
+        setAccessToken(null);
       },
     }),
     [user, loading, accessToken, supabase]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  if (!ctx) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
   return ctx;
 }
