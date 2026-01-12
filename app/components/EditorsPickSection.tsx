@@ -9,11 +9,11 @@ export default function EditorsPickSection({
   articles,
   takeItems = 4,
 
-  // opcija A: Editors Pick kao kategorija (npr. "editors-pick")
+  // option A: Editors Pick as a category (e.g. "editors-pick")
   categorySlug,
 
-  // opcija B: manual flag u Strapi (preporuka)
-  // u Article dodaj boolean field: editorsPick
+  // option B: manual flag in Strapi (recommended)
+  // add boolean field: editorsPick
   useEditorsPickFlag = false,
 }: {
   label?: string;
@@ -21,8 +21,8 @@ export default function EditorsPickSection({
   articles: Article[];
   takeItems?: number;
 
-  categorySlug?: string; // npr. "editors-pick"
-  useEditorsPickFlag?: boolean; // true => filtrira po (a as any).editorsPick === true
+  categorySlug?: string; // e.g. "editors-pick"
+  useEditorsPickFlag?: boolean; // true => filters by (a as any).editorsPick === true
 }) {
   function buildHref(a: Article) {
     return `/news/${a.slug}`;
@@ -32,7 +32,8 @@ export default function EditorsPickSection({
     return a?.author?.name ?? a?.author ?? a?.byline ?? "FULLPORT";
   }
 
-  const picks = (articles ?? []).filter((a) => {
+  // 1) Filter candidates
+  const picksRaw = (articles ?? []).filter((a) => {
     if (useEditorsPickFlag) return (a as any)?.editorsPick === true;
 
     if (categorySlug) {
@@ -40,12 +41,27 @@ export default function EditorsPickSection({
       return cat?.slug === categorySlug;
     }
 
-    // ako nisi zadao ni flag ni category, nemoj random prikazivat
+    // if neither flag nor category is provided, show nothing (by design)
     return false;
   });
 
+  // 2) Sort by rank ASC (1,2,3...), fallback to newest publishedAt
+  const picks = picksRaw
+    .slice()
+    .sort((a: any, b: any) => {
+      const ra = typeof a?.editorsPickRank === "number" ? a.editorsPickRank : 999999;
+      const rb = typeof b?.editorsPickRank === "number" ? b.editorsPickRank : 999999;
+
+      if (ra !== rb) return ra - rb;
+
+      const ta = a?.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+      const tb = b?.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+      return tb - ta;
+    });
+
   if (!picks.length) return null;
 
+  // 3) Featured + list
   const hero = picks[0];
 
   const featured = {
@@ -55,14 +71,16 @@ export default function EditorsPickSection({
     date: hero.publishedAt ? formatDate(hero.publishedAt) : "",
     imageUrl: firstCoverUrl(hero) ?? "https://picsum.photos/1200/800",
     imageAlt: hero.title,
+    rank: (hero as any)?.editorsPickRank as number | undefined,
   };
 
-  const items = picks.slice(1, 1 + takeItems).map((a) => ({
+  const items = picks.slice(1, 1 + takeItems).map((a: any) => ({
     id: a.id,
     title: a.title,
     href: buildHref(a),
     author: pickAuthor(a),
     date: a.publishedAt ? formatDate(a.publishedAt) : "",
+    rank: typeof a?.editorsPickRank === "number" ? a.editorsPickRank : undefined,
   }));
 
   return (
@@ -105,6 +123,13 @@ export default function EditorsPickSection({
                 <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-extrabold uppercase tracking-wider text-zinc-200">
                   Editor’s Pick
                 </span>
+
+                {typeof featured.rank === "number" ? (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-extrabold uppercase tracking-wider text-zinc-200">
+                    #{featured.rank}
+                  </span>
+                ) : null}
+
                 <span className="text-zinc-500">{featured.date}</span>
               </div>
 
@@ -129,12 +154,21 @@ export default function EditorsPickSection({
 
           <ul className="divide-y divide-zinc-800">
             {items.map((it) => (
-              <li key={it.id}>
+              <li key={String(it.id)}>
                 <Link href={it.href} className="block p-5 hover:bg-white/5 transition">
-                  <div className="text-xs text-zinc-500">{it.date}</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-zinc-500">{it.date}</div>
+                    {typeof it.rank === "number" ? (
+                      <div className="text-xs font-extrabold uppercase tracking-wider text-zinc-400">
+                        #{it.rank}
+                      </div>
+                    ) : null}
+                  </div>
+
                   <div className="mt-1 text-base font-extrabold leading-snug text-white hover:text-cyan-400 transition">
                     {it.title}
                   </div>
+
                   <div className="mt-2 text-xs font-bold uppercase tracking-wide text-zinc-500">
                     {it.author}
                   </div>
