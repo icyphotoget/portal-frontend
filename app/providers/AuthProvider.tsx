@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/app/lib/supabase";
+import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 type AuthUser = any;
 
@@ -15,6 +15,8 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,8 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     async function boot() {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       if (!mounted) return;
+
+      if (error) console.error("getSession error:", error);
 
       setUser(data.session?.user ?? null);
       setAccessToken(data.session?.access_token ?? null);
@@ -43,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -54,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut();
       },
     }),
-    [user, loading, accessToken]
+    [user, loading, accessToken, supabase]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
