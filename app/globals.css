@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* LiveBar marquee */
+.livebar-marquee {
+  display: flex;
+  gap: 32px;
+  width: max-content;
+  will-change: transform;
+  animation: livebar-marquee 10s linear infinite;
+}
+
+.livebar-marquee__inner {
+  white-space: nowrap;
+}
+
+@keyframes livebar-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livebar-marquee { animation: none; }
+}
