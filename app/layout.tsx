@@ -6,15 +6,20 @@ import { AuthProvider } from "@/app/providers/AuthProvider";
 import AnalyticsLoader from "@/app/components/AnalyticsLoader";
 import CookieBanner from "@/app/components/CookieBanner";
 
+const SITE_URL = "https://www.fullportlabs.com"; // ⬅️ promijeni na https://fullportlabs.com ako ti je primarno bez www
+const SITE_NAME = "FullPort";
+const DEFAULT_TITLE = "FullPort";
+const DEFAULT_DESC = "Breaking crypto headlines, memecoins, and on-chain stories.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fullportlabs.com"),
+  metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "FullPort",
-    template: "%s | FullPort",
+    default: DEFAULT_TITLE,
+    template: "%s | " + SITE_NAME,
   },
 
-  description: "Breaking crypto headlines, memecoins, and on-chain stories.",
+  description: DEFAULT_DESC,
 
   keywords: [
     "crypto",
@@ -28,9 +33,9 @@ export const metadata: Metadata = {
     "on-chain",
   ],
 
-  authors: [{ name: "FullPort" }],
-  creator: "FullPort",
-  publisher: "FullPort",
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
 
   robots: {
     index: true,
@@ -47,31 +52,36 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://fullportlabs.com",
-    siteName: "FullPort",
-    title: "FullPort",
-    description: "Breaking crypto headlines, memecoins, and on-chain stories.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESC,
     images: [
       {
-        url: "/og-home.jpg",
+        url: "/og-home.jpg", // ⬅️ mora postojati u /public/og-home.jpg
         width: 1200,
         height: 630,
-        alt: "FullPort — Crypto News & Insights",
+        alt: "FullPort — your daily crypto dose",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "FullPort",
-    description: "Breaking crypto headlines, memecoins, and on-chain stories.",
-    images: ["/og-home.jpg"],
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESC,
+    images: [
+      {
+        url: "/og-home.jpg",
+        alt: "FullPort — your daily crypto dose",
+      },
+    ],
   },
 
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: "/apple-touch-icon.png", // ⬅️ stavi u /public/apple-touch-icon.png (180x180)
   },
 };
 
@@ -85,10 +95,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>{children}</AuthProvider>
 
-        {/* ✅ Vercel Analytics only after consent.analytics === true */}
+        {/* Vercel Analytics only after consent.analytics === true */}
         <AnalyticsLoader />
 
-        {/* ✅ Cookie banner + manage settings */}
+        {/* Cookie banner + manage settings */}
         <CookieBanner />
       </body>
     </html>
