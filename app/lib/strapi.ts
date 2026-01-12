@@ -12,6 +12,10 @@ export type Article = {
   publishedAt: string | null;
   coverImage?: StrapiMedia;
   category?: Category | null;
+
+  // ✅ Editors Pick fields (NEW)
+  editorsPick?: boolean | null;
+  editorsPickRank?: number | null;
 };
 
 export function absolutizeStrapiUrl(maybeRelativeUrl: string | null | undefined) {
@@ -48,16 +52,14 @@ export function formatDate(iso: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d
-    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
-    .toUpperCase();
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
 }
 
 /** Normalizira Strapi relation (v4/v5) u Category ili null */
 export function getArticleCategory(a: any): Category | null {
   if (!a) return null;
 
-  // Ako si već normalizirao (category je direktno objekt s name/slug)
+  // already normalized: category is an object with name/slug
   const direct = a?.category;
   if (direct?.name && direct?.slug) return direct as Category;
 
@@ -71,16 +73,16 @@ export function getArticleCategory(a: any): Category | null {
   return null;
 }
 
-/** Pomocni: izvuci attributes iz Strapi entity-a (v4/v5) */
+/** Helper: izvuci attributes iz Strapi entity-a (v4/v5) */
 function entityAttrs<T = any>(entity: any): { id: number; attributes: T } | null {
   if (!entity) return null;
 
-  // v4/v5 standard: { id, attributes }
+  // v4/v5: { id, attributes }
   if (typeof entity?.id === "number" && entity?.attributes && typeof entity.attributes === "object") {
     return { id: entity.id, attributes: entity.attributes as T };
   }
 
-  // ponekad već dođe "flattened"
+  // sometimes already "flattened"
   if (typeof entity?.id === "number") {
     const { id, ...rest } = entity;
     return { id, attributes: rest as T };
@@ -103,15 +105,11 @@ function normalizeArticleEntity(entity: any): Article | null {
 
   const { id, attributes } = parsed;
 
-  // Strapi fields
   const title = attributes?.title ?? "";
   const slug = attributes?.slug ?? "";
   if (!title || !slug) return null;
 
   const category = getArticleCategory(attributes);
-
-  // coverImage može biti u attributes.coverImage (relation/media)
-  // mi ga ostavljamo kako je, jer firstCoverUrl zna pročitati shape
   const coverImage = attributes?.coverImage ?? null;
 
   return {
@@ -123,6 +121,10 @@ function normalizeArticleEntity(entity: any): Article | null {
     publishedAt: attributes?.publishedAt ?? null,
     coverImage,
     category,
+
+    // ✅ NEW fields from Strapi
+    editorsPick: attributes?.editorsPick ?? false,
+    editorsPickRank: attributes?.editorsPickRank ?? null,
   };
 }
 
@@ -141,22 +143,15 @@ export async function fetchHomeData(baseUrl: string) {
     `&populate=coverImage&populate=category` +
     `&pagination[pageSize]=50`;
 
-  const categoriesUrl =
-    `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
+  const categoriesUrl = `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
 
-  // Strapi v4/v5: { data: [...] }
   const [articlesJson, categoriesJson] = await Promise.all([
     fetchJson<{ data: any[] }>(articlesUrl),
     fetchJson<{ data: any[] }>(categoriesUrl),
   ]);
 
-  const articles = (articlesJson.data ?? [])
-    .map(normalizeArticleEntity)
-    .filter(Boolean) as Article[];
-
-  const categories = (categoriesJson.data ?? [])
-    .map(normalizeCategoryEntity)
-    .filter(Boolean) as Category[];
+  const articles = (articlesJson.data ?? []).map(normalizeArticleEntity).filter(Boolean) as Article[];
+  const categories = (categoriesJson.data ?? []).map(normalizeCategoryEntity).filter(Boolean) as Category[];
 
   return { articles, categories };
 }

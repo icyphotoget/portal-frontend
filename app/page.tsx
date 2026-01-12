@@ -53,7 +53,6 @@ export default async function HomePage() {
 
   const hero = articles[0] ?? null;
 
-  // Feed groups
   const topStories = articles.slice(1, 6);
   const latest = articles.slice(6);
 
@@ -76,16 +75,15 @@ export default async function HomePage() {
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
-        {/* 2) PUMPFUN (slug iz Strapi: pumpfun) */}
+        {/* 2) PUMPFUN */}
         <section className="mb-12">
           <PumpfunSection
             label="PUMPFUN"
             kicker="PUMP FUN"
-            // preporuka: umjesto /category/... koristi filter rutu
             seeAllHref="/news?category=pumpfun"
             categorySlug="pumpfun"
             articles={articles}
-            bg="#BFE7C7" // retro izblijeđena zelena + grain je već u komponenti
+            bg="#BFE7C7"
             takeItems={4}
           />
         </section>
@@ -96,7 +94,7 @@ export default async function HomePage() {
           <MostPopularCard articles={mostPopular} />
         </section>
 
-        {/* 4) BONKFUN (slug iz Strapi: bonkfun) */}
+        {/* 4) BONKFUN */}
         <section className="mb-12">
           <BonkfunSection
             label="BONKFUN"
@@ -108,21 +106,17 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 5) EDITOR'S PICK
-            ⚠️ OVO NE BI TREBALO BITI KATEGORIJA ako želiš manual pick.
-            Najbolje: boolean field editorsPick u Strapi i onda filtriranje po tom.
-            Ali ako ti je trenutno kategorija (npr slug "editors-pick"), stavi taj slug dolje.
-        */}
+        {/* 5) EDITOR'S PICK ✅ */}
         <section className="mb-12">
           <EditorsPickSection
             label="EDITOR'S PICK"
             seeAllHref="/news?editorsPick=true"
             articles={articles}
-            // ako je kod tebe editors pick po kategoriji, dodaj u komponentu categorySlug pattern kao PumpfunSection
+            useEditorsPickFlag
           />
         </section>
 
-        {/* 6) HOW TO (slug iz Strapi: how-to) */}
+        {/* 6) HOW TO */}
         <section className="mb-12">
           <HowToSection
             label="HOW TO?"
