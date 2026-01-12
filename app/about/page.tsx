@@ -87,57 +87,104 @@ export default function AboutPage() {
         </div>
 
         {/* Leadership Section */}
-        <section className="mb-12">
-          <h2 className="text-3xl font-black tracking-tight mb-6">FullPort Leadership</h2>
-          
-          <ul className="space-y-3 text-lg">
-            <li className="flex items-baseline gap-2">
-              <span className="text-cyan-400">•</span>
-              <span>
-                Editor-in-Chief:{" "}
-                <Link href="/author/john-doe" className="text-white hover:text-cyan-400 underline transition">
-                  John Doe
-                </Link>
-              </span>
+<section className="mb-12">
+  <h2 className="text-3xl font-black tracking-tight mb-6">FullPort team</h2>
+
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
+    <p className="text-white/90 leading-relaxed">
+      FullPort is built by a small, independent team of editors, analysts, and builders.
+      We focus on speed, signal over noise, and practical coverage of on-chain markets.
+    </p>
+
+    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      {[
+        { title: "Editorial", desc: "News, features, investigations, and standards." },
+        { title: "Research", desc: "On-chain data, market notes, and deep dives." },
+        { title: "Product", desc: "Site experience, performance, and reliability." },
+        { title: "Community", desc: "Tips, feedback, and reader support." },
+      ].map((x) => (
+        <div key={x.title} className="rounded-2xl border border-zinc-800 bg-black/20 p-4">
+          <div className="text-sm font-extrabold tracking-tight text-white">{x.title}</div>
+          <div className="mt-1 text-sm text-zinc-400">{x.desc}</div>
+        </div>
+      ))}
+    </div>
+
+    <p className="mt-6 text-sm text-zinc-400">
+      Want to reach the team?{" "}
+      <Link href="/contact" className="text-cyan-400 hover:text-cyan-300 underline transition">
+        Contact us here
+      </Link>
+      .
+    </p>
+  </div>
+</section>
+
+{/* Coverage Section */}
+<section className="mb-12">
+  <h2 className="text-3xl font-black tracking-tight mb-6">What we cover</h2>
+
+  <div className="space-y-4">
+    {[
+      {
+        title: "Breaking news",
+        bullets: ["Major market moves", "Protocol updates", "Security incidents"],
+      },
+      {
+        title: "On-chain & memecoins",
+        bullets: ["Trends & rotations", "Launches & tokenomics", "Risk signals"],
+      },
+      {
+        title: "How-to guides",
+        bullets: ["Wallet safety", "DeFi basics", "Best practices"],
+      },
+      {
+        title: "Features",
+        bullets: ["Interviews", "Long reads", "Investigations (when warranted)"],
+      },
+    ].map((s) => (
+      <div key={s.title} className="rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
+        <h3 className="text-xl font-black">{s.title}</h3>
+        <ul className="mt-3 space-y-2 text-white/85">
+          {s.bullets.map((b) => (
+            <li key={b} className="flex items-start gap-2">
+              <span className="mt-1 text-cyan-400">•</span>
+              <span className="text-sm sm:text-base">{b}</span>
             </li>
-            <li className="flex items-baseline gap-2">
-              <span className="text-cyan-400">•</span>
-              <span>
-                Executive Editor:{" "}
-                <Link href="/author/jane-smith" className="text-white hover:text-cyan-400 underline transition">
-                  Jane Smith
-                </Link>
-              </span>
-            </li>
-            <li className="flex items-baseline gap-2">
-              <span className="text-cyan-400">•</span>
-              <span>
-                Editor-at-Large:{" "}
-                <Link href="/author/mike-johnson" className="text-white hover:text-cyan-400 underline transition">
-                  Mike Johnson
-                </Link>
-              </span>
-            </li>
-            <li className="flex items-baseline gap-2">
-              <span className="text-cyan-400">•</span>
-              <span>
-                Executive Creative Director:{" "}
-                <Link href="/author/sarah-lee" className="text-white hover:text-cyan-400 underline transition">
-                  Sarah Lee
-                </Link>
-              </span>
-            </li>
-            <li className="flex items-baseline gap-2">
-              <span className="text-cyan-400">•</span>
-              <span>
-                Managing Editor:{" "}
-                <Link href="/author/david-chen" className="text-white hover:text-cyan-400 underline transition">
-                  David Chen
-                </Link>
-              </span>
-            </li>
-          </ul>
-        </section>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
+
+{/* Editorial note */}
+<section className="mb-12">
+  <h2 className="text-3xl font-black tracking-tight mb-6">Editorial note</h2>
+
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
+    <p className="text-white/90 leading-relaxed">
+      We label opinion vs. reporting, correct mistakes fast, and prioritize sources you can verify.
+      If something looks off, we want to hear about it.
+    </p>
+
+    <div className="mt-4 flex flex-wrap gap-3">
+      <Link
+        href="/contact"
+        className="inline-flex items-center rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold text-black hover:bg-zinc-200 transition"
+      >
+        Send feedback
+      </Link>
+      <Link
+        href="/tip-us"
+        className="inline-flex items-center rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800 transition"
+      >
+        Send a tip
+      </Link>
+    </div>
+  </div>
+</section>
+
 
         {/* Crypto Section */}
         <section className="mb-12">
