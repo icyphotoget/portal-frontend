@@ -13,7 +13,34 @@ import EditorsPickSection from "@/app/components/EditorsPickSection";
 import HowToSection from "@/app/components/HowToSection";
 import Footer from "@/app/components/Footer";
 
+import LiveBar, { type LiveBarItem } from "@/app/components/LiveBar";
+
 import { fetchHomeData, type Article } from "@/app/lib/strapi";
+
+async function fetchLatestLiveBarItem(baseUrl: string): Promise<LiveBarItem | null> {
+  const url =
+    `${baseUrl}/api/articles?` +
+    `filters[liveUpdate][$notNull]=true&filters[liveUpdate][$ne]=&` +
+    `sort=publishedAt:desc&pagination[pageSize]=1`;
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return null;
+
+  const json = await res.json();
+  const entity = json?.data?.[0];
+  const attrs = entity?.attributes;
+
+  const text = attrs?.liveUpdate as string | undefined;
+  const slug = attrs?.slug as string | undefined;
+
+  if (!text || !text.trim()) return null;
+
+  return {
+    text: text.trim(),
+    href: slug ? `/news/${slug}` : undefined,
+    label: "LIVE",
+  };
+}
 
 export default async function HomePage() {
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
@@ -59,6 +86,9 @@ export default async function HomePage() {
   const mostPopular = latest.slice(0, 6);
   const latestFeed = latest.slice(6);
 
+  // ✅ LIVE BAR item (latest article that has liveUpdate)
+  const liveItem = await fetchLatestLiveBarItem(baseUrl);
+
   return (
     <main className="min-h-screen bg-black text-white flex min-h-[100dvh] flex-col">
       {/* Subtle glows */}
@@ -74,6 +104,11 @@ export default async function HomePage() {
       <div className="relative mx-auto w-full max-w-[1440px] flex-1 px-4 py-8 lg:px-8">
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
+
+        {/* ✅ LIVE BAR between HERO and PUMPFUN */}
+        <div className="mb-10">
+          <LiveBar item={liveItem} title="FULLPORT LIVE" />
+        </div>
 
         {/* 2) PUMPFUN */}
         <section className="mb-12">
