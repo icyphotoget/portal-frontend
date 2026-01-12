@@ -44,14 +44,8 @@ export default function CommunityGuidelinesPage() {
               </Link>
             </div>
 
-            {/* Right */}
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
+            {/* Right (only hamburger/menu) */}
+            <div className="flex flex-1 items-center justify-end">
               <MobileMenu categories={categories} />
             </div>
           </div>
@@ -175,15 +169,11 @@ export default function CommunityGuidelinesPage() {
             <div className="mt-4 space-y-2 text-white/80">
               <div className="flex items-start gap-2">
                 <span className="mt-2 h-2 w-2 rounded-full bg-fuchsia-400" />
-                <p>
-                  If you’re promoting a token or project, disclose your position (bags, team role, paid promo).
-                </p>
+                <p>If you’re promoting a token or project, disclose your position (bags, team role, paid promo).</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="mt-2 h-2 w-2 rounded-full bg-fuchsia-400" />
-                <p>
-                  Don’t post “guaranteed profits”, fake screenshots, or pressure tactics (“ape now or regret”).
-                </p>
+                <p>Don’t post “guaranteed profits”, fake screenshots, or pressure tactics (“ape now or regret”).</p>
               </div>
             </div>
           </div>

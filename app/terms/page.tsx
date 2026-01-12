@@ -41,13 +41,8 @@ export default function TermsPage() {
               </Link>
             </div>
 
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
+            {/* Right (only hamburger/menu) */}
+            <div className="flex flex-1 items-center justify-end">
               <MobileMenu categories={categories} />
             </div>
           </div>
@@ -56,16 +51,14 @@ export default function TermsPage() {
 
       {/* Content */}
       <div className="relative mx-auto max-w-[680px] px-4 sm:px-6 py-16">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">
-          Terms of Use
-        </h1>
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">Terms of Use</h1>
 
         <div className="text-sm text-zinc-400 mb-10">Last updated: Jan 2026</div>
 
         <div className="text-lg leading-relaxed space-y-6 mb-12">
           <p className="text-white/90">
-            These Terms of Use govern your access to and use of <span className="font-bold italic">FullPort</span>.
-            By using the site, you agree to these terms.
+            These Terms of Use govern your access to and use of{" "}
+            <span className="font-bold italic">FullPort</span>. By using the site, you agree to these terms.
           </p>
           <p className="text-white/90">
             If you do not agree, please do not use the site. For privacy details, see{" "}
@@ -88,12 +81,8 @@ export default function TermsPage() {
               Content is provided for informational purposes only and does not constitute financial, investment, legal,
               or tax advice.
             </Bullet>
-            <Bullet>
-              Crypto assets are volatile. You are responsible for your own decisions and risk management.
-            </Bullet>
-            <Bullet>
-              We may update or correct content at any time without notice.
-            </Bullet>
+            <Bullet>Crypto assets are volatile. You are responsible for your own decisions and risk management.</Bullet>
+            <Bullet>We may update or correct content at any time without notice.</Bullet>
           </ul>
         </Section>
 
@@ -102,9 +91,7 @@ export default function TermsPage() {
             <Bullet>No harassment, hate, threats, or illegal content.</Bullet>
             <Bullet>No spam, scams, phishing, impersonation, or attempts to manipulate others.</Bullet>
             <Bullet>No interfering with site security, availability, or access controls.</Bullet>
-            <Bullet>
-              If you submit content (tips/messages), don’t include private info you don’t have the right to share.
-            </Bullet>
+            <Bullet>If you submit content (tips/messages), don’t include private info you don’t have the right to share.</Bullet>
           </ul>
 
           <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
@@ -133,7 +120,9 @@ export default function TermsPage() {
           <ul className="space-y-3 text-lg">
             <Bullet>The site is provided “as is” without warranties of any kind.</Bullet>
             <Bullet>We do not guarantee accuracy, availability, or uninterrupted access.</Bullet>
-            <Bullet>To the fullest extent permitted by law, we disclaim liability for losses arising from use of the site.</Bullet>
+            <Bullet>
+              To the fullest extent permitted by law, we disclaim liability for losses arising from use of the site.
+            </Bullet>
           </ul>
         </Section>
 

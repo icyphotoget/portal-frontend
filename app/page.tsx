@@ -18,25 +18,35 @@ import LiveBar, { type LiveBarItem } from "@/app/components/LiveBar";
 import { fetchHomeData, type Article } from "@/app/lib/strapi";
 
 async function fetchLatestLiveBarItem(baseUrl: string): Promise<LiveBarItem | null> {
+  // ✅ Uvijek traži samo objavljene koji imaju liveUpdate
+  // - publishedAt not null
+  // - liveUpdate not null
+  // - liveUpdate not empty string (best-effort)
   const url =
     `${baseUrl}/api/articles?` +
-    `filters[liveUpdate][$notNull]=true&filters[liveUpdate][$ne]=&` +
-    `sort=publishedAt:desc&pagination[pageSize]=1`;
+    `filters[publishedAt][$notNull]=true&` +
+    `filters[liveUpdate][$notNull]=true&` +
+    `sort=publishedAt:desc&pagination[pageSize]=1&` +
+    // ✅ uzmi samo polja koja trebamo (manje payloada + manje edge-caseova)
+    `fields[0]=slug&fields[1]=liveUpdate`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
 
   const json = await res.json();
   const entity = json?.data?.[0];
-  const attrs = entity?.attributes;
+  if (!entity) return null;
 
-  const text = attrs?.liveUpdate as string | undefined;
+  // ✅ podrži i v4 (attributes) i v5 (flat)
+  const attrs = entity?.attributes ?? entity;
+
+  const text = (attrs?.liveUpdate as string | undefined)?.trim();
   const slug = attrs?.slug as string | undefined;
 
-  if (!text || !text.trim()) return null;
+  if (!text) return null;
 
   return {
-    text: text.trim(),
+    text,
     href: slug ? `/news/${slug}` : undefined,
     label: "LIVE",
   };
@@ -86,7 +96,7 @@ export default async function HomePage() {
   const mostPopular = latest.slice(0, 6);
   const latestFeed = latest.slice(6);
 
-  // ✅ LIVE BAR item (latest article that has liveUpdate)
+  // ✅ LIVE BAR item (latest published article that has liveUpdate)
   const liveItem = await fetchLatestLiveBarItem(baseUrl);
 
   return (
@@ -105,10 +115,12 @@ export default async function HomePage() {
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
-        {/* ✅ LIVE BAR between HERO and PUMPFUN */}
-        <div className="mb-10">
-          <LiveBar item={liveItem} title="FULLPORT LIVE" />
-        </div>
+        {/* ✅ LIVE BAR between HERO and PUMPFUN (render only if postoji) */}
+        {liveItem ? (
+          <div className="mb-10">
+            <LiveBar item={liveItem} title="FULLPORT LIVE" />
+          </div>
+        ) : null}
 
         {/* 2) PUMPFUN */}
         <section className="mb-12">

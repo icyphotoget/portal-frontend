@@ -13,7 +13,7 @@ export type Article = {
   coverImage?: StrapiMedia;
   category?: Category | null;
 
-  // ✅ Editors Pick fields (NEW)
+  // ✅ Editors Pick fields
   editorsPick?: boolean | null;
   editorsPickRank?: number | null;
 };
@@ -94,8 +94,10 @@ function entityAttrs<T = any>(entity: any): { id: number; attributes: T } | null
 function normalizeCategoryEntity(entity: any): Category | null {
   const parsed = entityAttrs<any>(entity);
   if (!parsed) return null;
+
   const { id, attributes } = parsed;
   if (!attributes?.name || !attributes?.slug) return null;
+
   return { id, ...attributes } as Category;
 }
 
@@ -122,7 +124,6 @@ function normalizeArticleEntity(entity: any): Article | null {
     coverImage,
     category,
 
-    // ✅ NEW fields from Strapi
     editorsPick: attributes?.editorsPick ?? false,
     editorsPickRank: attributes?.editorsPickRank ?? null,
   };
@@ -137,6 +138,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
+/** ✅ HOME: artikli + kategorije */
 export async function fetchHomeData(baseUrl: string) {
   const articlesUrl =
     `${baseUrl}/api/articles?sort=publishedAt:desc` +
@@ -154,4 +156,12 @@ export async function fetchHomeData(baseUrl: string) {
   const categories = (categoriesJson.data ?? []).map(normalizeCategoryEntity).filter(Boolean) as Category[];
 
   return { articles, categories };
+}
+
+/** ✅ SAMO KATEGORIJE (za layout/topnav) */
+export async function fetchCategories(baseUrl: string) {
+  const categoriesUrl = `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
+  const categoriesJson = await fetchJson<{ data: any[] }>(categoriesUrl);
+
+  return (categoriesJson.data ?? []).map(normalizeCategoryEntity).filter(Boolean) as Category[];
 }

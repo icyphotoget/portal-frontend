@@ -43,14 +43,8 @@ export default function PrivacyNoticePage() {
               </Link>
             </div>
 
-            {/* Right */}
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
+            {/* Right (only hamburger/menu) */}
+            <div className="flex flex-1 items-center justify-end">
               <MobileMenu categories={categories} />
             </div>
           </div>
@@ -59,13 +53,9 @@ export default function PrivacyNoticePage() {
 
       {/* Content */}
       <div className="relative mx-auto max-w-[680px] px-4 sm:px-6 py-16">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">
-          Privacy Notice
-        </h1>
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">Privacy Notice</h1>
 
-        <div className="text-sm text-zinc-400 mb-10">
-          Last updated: Jan 2026
-        </div>
+        <div className="text-sm text-zinc-400 mb-10">Last updated: Jan 2026</div>
 
         <div className="text-lg leading-relaxed space-y-6 mb-12">
           <p className="text-white/90">
@@ -125,21 +115,15 @@ export default function PrivacyNoticePage() {
             <div className="mt-4 space-y-2 text-white/80">
               <div className="flex items-start gap-2">
                 <span className="mt-2 h-2 w-2 rounded-full bg-fuchsia-400" />
-                <p>
-                  Hosting/Infrastructure (e.g. Vercel) to deliver the site.
-                </p>
+                <p>Hosting/Infrastructure (e.g. Vercel) to deliver the site.</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="mt-2 h-2 w-2 rounded-full bg-fuchsia-400" />
-                <p>
-                  Analytics (Vercel Analytics) — only if you opt in via cookie consent.
-                </p>
+                <p>Analytics (Vercel Analytics) — only if you opt in via cookie consent.</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="mt-2 h-2 w-2 rounded-full bg-fuchsia-400" />
-                <p>
-                  Legal compliance or to protect rights, safety, and security.
-                </p>
+                <p>Legal compliance or to protect rights, safety, and security.</p>
               </div>
             </div>
           </div>
@@ -157,9 +141,7 @@ export default function PrivacyNoticePage() {
               </Link>{" "}
               or the “Manage Privacy Settings” link in the footer.
             </Bullet>
-            <Bullet>
-              You can request access, correction, or deletion of personal information where applicable.
-            </Bullet>
+            <Bullet>You can request access, correction, or deletion of personal information where applicable.</Bullet>
           </ul>
         </section>
 
@@ -175,9 +157,7 @@ export default function PrivacyNoticePage() {
         {/* Contact CTA */}
         <div className="mt-16 p-8 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl">
           <h3 className="text-2xl font-black mb-4">Questions?</h3>
-          <p className="text-zinc-400 mb-6">
-            If you have privacy questions or requests, contact us.
-          </p>
+          <p className="text-zinc-400 mb-6">If you have privacy questions or requests, contact us.</p>
           <div className="flex gap-3">
             <Link
               href="/contact"

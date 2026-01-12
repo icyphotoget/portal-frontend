@@ -41,13 +41,8 @@ export default function EthicsPage() {
               </Link>
             </div>
 
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
+            {/* Right (only hamburger/menu) */}
+            <div className="flex flex-1 items-center justify-end">
               <MobileMenu categories={categories} />
             </div>
           </div>
@@ -56,9 +51,7 @@ export default function EthicsPage() {
 
       {/* Content */}
       <div className="relative mx-auto max-w-[680px] px-4 sm:px-6 py-16">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">
-          Ethics Statement
-        </h1>
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6">Ethics Statement</h1>
 
         <div className="text-sm text-zinc-400 mb-10">Last updated: Jan 2026</div>
 
@@ -75,9 +68,7 @@ export default function EthicsPage() {
             <Bullet>
               If we cover a project where an author has a material interest, we disclose it clearly in the article.
             </Bullet>
-            <Bullet>
-              Paid promotions, sponsored content, or affiliate relationships (if used) must be labeled.
-            </Bullet>
+            <Bullet>Paid promotions, sponsored content, or affiliate relationships (if used) must be labeled.</Bullet>
           </ul>
         </Section>
 
@@ -85,17 +76,15 @@ export default function EthicsPage() {
           <ul className="space-y-3 text-lg">
             <Bullet>We verify claims with primary sources where possible (docs, on-chain data, direct statements).</Bullet>
             <Bullet>We attribute data and quotes to sources and avoid misleading framing.</Bullet>
-            <Bullet>
-              For breaking news, we may publish with limited info and update as facts are confirmed.
-            </Bullet>
+            <Bullet>For breaking news, we may publish with limited info and update as facts are confirmed.</Bullet>
           </ul>
         </Section>
 
         <Section title="Corrections Policy">
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
             <p className="text-white/85 leading-relaxed">
-              If we make a material error, we correct it as quickly as possible and note what changed.
-              To request a correction, contact us with the article link and supporting evidence.
+              If we make a material error, we correct it as quickly as possible and note what changed. To request a
+              correction, contact us with the article link and supporting evidence.
             </p>
 
             <div className="mt-4 flex gap-3">
@@ -145,9 +134,7 @@ export default function EthicsPage() {
 
         <div className="mt-16 p-8 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl">
           <h3 className="text-2xl font-black mb-4">Get in touch</h3>
-          <p className="text-zinc-400 mb-6">
-            Questions about ethics, conflicts, or corrections? Message us.
-          </p>
+          <p className="text-zinc-400 mb-6">Questions about ethics, conflicts, or corrections? Message us.</p>
           <div className="flex gap-3">
             <Link
               href="/contact"

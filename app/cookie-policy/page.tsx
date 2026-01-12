@@ -43,14 +43,8 @@ export default function CookiePolicyPage() {
               </Link>
             </div>
 
-            {/* Right */}
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
+            {/* Right (only hamburger/menu) */}
+            <div className="flex flex-1 items-center justify-end">
               <MobileMenu categories={categories} />
             </div>
           </div>
@@ -63,9 +57,7 @@ export default function CookiePolicyPage() {
           Cookie Policy
         </h1>
 
-        <div className="text-sm text-zinc-400 mb-10">
-          Last updated: Jan 2026
-        </div>
+        <div className="text-sm text-zinc-400 mb-10">Last updated: Jan 2026</div>
 
         <div className="text-lg leading-relaxed space-y-6 mb-12">
           <p className="text-white/90">
@@ -78,7 +70,6 @@ export default function CookiePolicyPage() {
           </p>
         </div>
 
-        {/* What cookies are */}
         <section className="mb-12">
           <h2 className="text-3xl font-black tracking-tight mb-6">What Are Cookies?</h2>
           <p className="text-white/90 text-lg leading-relaxed">
@@ -87,14 +78,13 @@ export default function CookiePolicyPage() {
           </p>
         </section>
 
-        {/* Categories */}
         <section className="mb-12">
           <h2 className="text-3xl font-black tracking-tight mb-6">Cookies We Use</h2>
 
           <div className="space-y-4">
             <CookieCard
               title="Necessary cookies"
-              desc="These are required for core functionality like security, session handling (if you log in), and basic site operations. They can’t be disabled."
+              desc="These are required for core functionality like security and basic site operations. They can’t be disabled."
               chips={["Required"]}
             />
             <CookieCard
@@ -104,38 +94,24 @@ export default function CookiePolicyPage() {
             />
             <CookieCard
               title="Analytics cookies (Vercel Analytics)"
-              desc="If you consent, we use analytics to understand traffic and improve performance. If you reject, analytics won’t load."
+              desc="If you consent, we use analytics to understand traffic and improve performance."
               chips={["Optional", "Consent-based"]}
             />
           </div>
         </section>
 
-        {/* How to manage */}
         <section className="mb-12">
           <h2 className="text-3xl font-black tracking-tight mb-6">How To Manage Cookies</h2>
 
           <ul className="space-y-3 text-lg">
-            <Bullet>
-              Use the “Manage Privacy Settings” link in the footer to change consent anytime.
-            </Bullet>
-            <Bullet>
-              You can also clear cookies in your browser settings (this may log you out and reset preferences).
-            </Bullet>
+            <Bullet>Use the “Manage Privacy Settings” link in the footer to change consent anytime.</Bullet>
+            <Bullet>You can also clear cookies in your browser settings.</Bullet>
           </ul>
-
-          <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
-            <p className="text-white/85 leading-relaxed">
-              Tip: After changing cookie settings, refresh the page to ensure scripts reload with the new preferences.
-            </p>
-          </div>
         </section>
 
-        {/* Contact CTA */}
         <div className="mt-16 p-8 rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl">
           <h3 className="text-2xl font-black mb-4">Need help?</h3>
-          <p className="text-zinc-400 mb-6">
-            Questions about cookies or privacy? Reach out and we’ll help.
-          </p>
+          <p className="text-zinc-400 mb-6">Questions about cookies or privacy? Reach out.</p>
           <div className="flex gap-3">
             <Link
               href="/contact"
@@ -170,12 +146,12 @@ function CookieCard({
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-xl p-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+        <div>
           <h3 className="text-xl font-black">{title}</h3>
           <p className="mt-2 text-white/80 leading-relaxed">{desc}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2 justify-end">
+        <div className="flex flex-wrap gap-2">
           {chips.map((c) => (
             <span
               key={c}

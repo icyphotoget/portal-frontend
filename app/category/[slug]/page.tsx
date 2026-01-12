@@ -1,7 +1,5 @@
 // app/category/[slug]/page.tsx
 import Link from "next/link";
-import BottomNav from "@/app/components/BottomNav";
-import MobileMenu from "@/app/components/MobileMenu";
 
 type StrapiMedia = any;
 
@@ -69,7 +67,7 @@ function formatDate(iso: string | null) {
  * Normalize Strapi entity -> Category
  * Supports:
  * - v4/v5: { id, attributes: { ... } }
- * - v5 (your API): { id, name, slug, ... } (flat)
+ * - v5 (flat): { id, name, slug, ... }
  */
 function normalizeCategory(item: any): Category | null {
   if (!item) return null;
@@ -113,7 +111,6 @@ function normalizeArticle(item: any): Article | null {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  // In dev, no-store avoids “ghost” caching while you iterate
   const res = await fetch(url, { cache: "no-store" });
 
   if (!res.ok) {
@@ -128,9 +125,7 @@ async function fetchCategoryData(baseUrl: string, categorySlug: string) {
   const s = encodeURIComponent(categorySlug);
 
   // Category (by slug)
-  const categoryUrl =
-    `${baseUrl}/api/categories?filters[slug][$eq]=${s}` +
-    `&pagination[pageSize]=1`;
+  const categoryUrl = `${baseUrl}/api/categories?filters[slug][$eq]=${s}&pagination[pageSize]=1`;
 
   // Articles in this category
   const articlesUrl =
@@ -139,27 +134,16 @@ async function fetchCategoryData(baseUrl: string, categorySlug: string) {
     `&populate[coverImage]=true&populate[category]=true` +
     `&pagination[pageSize]=50`;
 
-  // All categories for nav
-  const categoriesUrl =
-    `${baseUrl}/api/categories?sort=name:asc&pagination[pageSize]=50`;
-
-  const [categoryJson, articlesJson, categoriesJson] = await Promise.all([
+  const [categoryJson, articlesJson] = await Promise.all([
     fetchJson<any>(categoryUrl),
     fetchJson<any>(articlesUrl),
-    fetchJson<any>(categoriesUrl),
   ]);
 
   const category = normalizeCategory(categoryJson?.data?.[0]);
 
-  const articles = (articlesJson?.data ?? [])
-    .map(normalizeArticle)
-    .filter(Boolean) as Article[];
+  const articles = (articlesJson?.data ?? []).map(normalizeArticle).filter(Boolean) as Article[];
 
-  const categories = (categoriesJson?.data ?? [])
-    .map(normalizeCategory)
-    .filter(Boolean) as Category[];
-
-  return { category, articles, categories };
+  return { category, articles };
 }
 
 // ✅ Next 16.1 / Turbopack fix: params can be a Promise
@@ -174,113 +158,64 @@ export default async function CategoryPage({
 
   if (!baseUrl) {
     return (
-      <main className="min-h-screen bg-black text-white">
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <p className="text-zinc-400">Missing NEXT_PUBLIC_STRAPI_URL.</p>
-        </div>
-      </main>
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <p className="text-zinc-400">Missing NEXT_PUBLIC_STRAPI_URL.</p>
+      </div>
     );
   }
 
   let category: Category | null = null;
   let articles: Article[] = [];
-  let categories: Category[] = [];
 
   try {
     const data = await fetchCategoryData(baseUrl, slug);
     category = data.category;
     articles = data.articles;
-    categories = data.categories;
-  } catch (e: any) {
+  } catch {
     return (
-      <main className="min-h-screen bg-black text-white">
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <h1 className="text-3xl font-bold">Error</h1>
-          <p className="mt-2 text-zinc-400">Failed to load category data.</p>
-        </div>
-      </main>
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <h1 className="text-3xl font-bold">Error</h1>
+        <p className="mt-2 text-zinc-400">Failed to load category data.</p>
+      </div>
     );
   }
 
   if (!category) {
     return (
-      <main className="min-h-screen bg-black text-white">
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <h1 className="text-3xl font-bold">Category Not Found</h1>
-          <p className="mt-2 text-zinc-400">The category you're looking for doesn't exist.</p>
-          <Link href="/" className="mt-4 inline-block text-cyan-400 hover:text-cyan-300">
-            ← Back to Home
-          </Link>
-        </div>
-      </main>
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <h1 className="text-3xl font-bold">Category Not Found</h1>
+        <p className="mt-2 text-zinc-400">The category you're looking for doesn't exist.</p>
+        <Link href="/" className="mt-4 inline-block text-cyan-400 hover:text-cyan-300">
+          ← Back to Home
+        </Link>
+      </div>
     );
   }
 
-  const featured = articles.slice(0, 1)[0] ?? null;
+  const featured = articles[0] ?? null;
   const grid = articles.slice(1);
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <div className="min-h-screen">
       {/* Subtle glows */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[140px]" />
         <div className="absolute -bottom-56 right-[-160px] h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[160px]" />
       </div>
 
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 bg-black/85 backdrop-blur">
-        <div className="mx-auto max-w-[1440px] px-4 lg:px-8">
-          <div className="relative flex h-16 items-center border-b border-zinc-800">
-            {/* Left */}
-            <div className="flex flex-1 items-center gap-3">
-              <Link href="/" className="text-sm text-zinc-400 hover:text-white transition">
-                ← Home
-              </Link>
-            </div>
-
-            {/* Center (LOGO) */}
-            <div className="absolute left-1/2 -translate-x-1/2">
-              <Link href="/" className="flex items-center justify-center">
-                <img
-                  src="/logo-fullport.png"
-                  alt="FullPort"
-                  className="h-7 sm:h-8 md:h-9 object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
-                  draggable={false}
-                />
-              </Link>
-            </div>
-
-            {/* Right */}
-            <div className="flex flex-1 items-center justify-end gap-2">
-              <Link
-                href="/login"
-                className="rounded-full bg-zinc-100 px-5 py-2 text-xs font-extrabold uppercase tracking-wide text-black hover:bg-white transition"
-              >
-                Log in
-              </Link>
-              <MobileMenu categories={categories} />
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Category Header */}
       <div className="relative border-b border-zinc-800 bg-gradient-to-b from-purple-900/20 to-transparent">
         <div className="mx-auto max-w-[1440px] px-4 lg:px-8 py-12 lg:py-16">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-            <span className="text-sm font-bold uppercase tracking-wider text-cyan-400">
-              Category
-            </span>
+            <span className="text-sm font-bold uppercase tracking-wider text-cyan-400">Category</span>
           </div>
 
-          <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-4">
-            {category.name}
-          </h1>
+          <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight mb-4">{category.name}</h1>
 
-          {category.description && (
+          {category.description ? (
             <p className="text-xl text-zinc-400 max-w-3xl">{category.description}</p>
-          )}
+          ) : null}
 
           <div className="mt-6 flex items-center gap-2 text-sm text-zinc-500">
             <span>{articles.length} articles</span>
@@ -290,13 +225,14 @@ export default async function CategoryPage({
 
       <div className="relative mx-auto max-w-[1440px] px-4 lg:px-8 py-8">
         {/* Featured Article */}
-        {featured && (
+        {featured ? (
           <section className="mb-12">
             <Link href={`/news/${featured.slug}`} className="group block">
               <div className="grid lg:grid-cols-2 gap-8 items-center">
                 {/* Image */}
                 <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                   {firstCoverUrl(featured) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={firstCoverUrl(featured)!}
                       alt={featured.title}
@@ -320,22 +256,21 @@ export default async function CategoryPage({
                     {featured.title}
                   </h2>
 
-                  {featured.excerpt && (
+                  {featured.excerpt ? (
                     <p className="text-lg text-zinc-400 leading-relaxed mb-4">{featured.excerpt}</p>
-                  )}
+                  ) : null}
 
                   <div className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-cyan-400">
-                    Read article
-                    <span className="transition group-hover:translate-x-1">→</span>
+                    Read article <span className="transition group-hover:translate-x-1">→</span>
                   </div>
                 </div>
               </div>
             </Link>
           </section>
-        )}
+        ) : null}
 
         {/* Articles Grid */}
-        {grid.length > 0 && (
+        {grid.length > 0 ? (
           <section>
             <h2 className="text-2xl font-extrabold mb-6">All {category.name}</h2>
 
@@ -349,6 +284,7 @@ export default async function CategoryPage({
                       {/* Image */}
                       <div className="relative aspect-[16/9] overflow-hidden bg-zinc-900">
                         {coverUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={coverUrl}
                             alt={article.title}
@@ -367,11 +303,9 @@ export default async function CategoryPage({
                           {article.title}
                         </h3>
 
-                        {article.excerpt && (
-                          <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
-                            {article.excerpt}
-                          </p>
-                        )}
+                        {article.excerpt ? (
+                          <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">{article.excerpt}</p>
+                        ) : null}
                       </div>
                     </article>
                   </Link>
@@ -379,23 +313,18 @@ export default async function CategoryPage({
               })}
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* Empty state */}
-        {articles.length === 0 && (
+        {articles.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-xl text-zinc-400">No articles found in this category yet.</p>
             <Link href="/" className="mt-4 inline-block text-cyan-400 hover:text-cyan-300">
               ← Back to Home
             </Link>
           </div>
-        )}
+        ) : null}
       </div>
-
-      {/* Bottom nav only on mobile */}
-      <div className="lg:hidden">
-        <BottomNav />
-      </div>
-    </main>
+    </div>
   );
 }
