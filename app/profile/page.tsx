@@ -1,43 +1,87 @@
-import { redirect } from "next/navigation";
+// app/profile/page.tsx
 import Link from "next/link";
 import ProfileClient from "./profileClient";
 import { createSupabaseServer } from "@/app/lib/supabase/server";
 
+type ProfileRow = {
+  id: string;
+  nickname: string | null;
+  avatar_url: string | null;
+};
+
+type BookmarkRow = {
+  id: number;
+  user_id: string;
+  article_id: number | null;
+  article_slug: string;
+  article_title: string;
+  article_cover_url?: string | null; // ako nemaš ovu kolonu u DB, ostavi ovako (ne koristimo je)
+  created_at: string;
+};
+
 export default async function ProfilePage() {
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login?next=/profile");
+  // 1) Auth user
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
+  // Ako nema usera (ili error), pokaži login ekran
+  if (userErr || !user) {
+    return (
+      <main className="min-h-screen bg-black text-white">
+        <div className="mx-auto max-w-3xl px-4 py-10">
+          <Link href="/" className="text-sm text-zinc-400 hover:text-white">
+            ← Home
+          </Link>
+
+          <h1 className="mt-8 text-3xl font-extrabold">Profile</h1>
+          <p className="mt-2 text-zinc-400">Please log in first.</p>
+
+          <Link
+            href="/login"
+            className="mt-6 inline-flex rounded-xl bg-white px-5 py-2.5 font-bold text-black"
+          >
+            Go to login
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  // 2) Profile row
+  const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("nickname")
+    .select("id,nickname,avatar_url")
     .eq("id", user.id)
-    .maybeSingle();
+    .maybeSingle<ProfileRow>();
+
+  if (profileErr) {
+    console.error("Profile error:", profileErr);
+  }
+
+  // 3) Bookmarks
+  const { data: bookmarkRows, error: bmErr } = await supabase
+    .from("bookmarks")
+    .select("id,user_id,article_id,article_slug,article_title,created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50)
+    .returns<BookmarkRow[]>();
+
+  if (bmErr) {
+    console.error("Bookmarks error:", bmErr.message, bmErr);
+  }
+
+  const bookmarks = (bookmarkRows ?? []) as any[];
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm text-zinc-300 hover:text-white">← Home</Link>
-          <form action="/auth/signout" method="post">
-            <button className="rounded-xl border border-zinc-800 bg-zinc-900/30 px-4 py-2 text-sm hover:bg-zinc-900/55 transition">
-              Log out
-            </button>
-          </form>
-        </div>
-
-        <div className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-900/20 p-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Your profile</h1>
-          <p className="mt-2 text-zinc-300">
-            Signed in as <span className="text-zinc-100">{user.email ?? "OAuth user"}</span>
-          </p>
-
-          <div className="mt-6">
-            <ProfileClient initialNickname={profile?.nickname ?? ""} />
-          </div>
-        </div>
-      </div>
-    </main>
+    <ProfileClient
+      user={{ id: user.id, email: user.email }}
+      profile={(profile ?? null) as any}
+      bookmarks={bookmarks}
+    />
   );
 }

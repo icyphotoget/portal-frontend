@@ -13,18 +13,19 @@ export async function middleware(req: NextRequest) {
         return req.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+        for (const { name, value, options } of cookiesToSet) {
           res.cookies.set(name, value, options);
-        });
+        }
       },
     },
   });
 
+  // ✅ BITNO: ovo osvježava/rotira session cookie kad treba
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /profile
+  // ✅ Protect /profile
   if (req.nextUrl.pathname.startsWith("/profile") && !user) {
     const redirectUrl = req.nextUrl.clone();
     redirectUrl.pathname = "/login";
@@ -36,5 +37,8 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/profile/:path*", "/login", "/auth/callback"],
+  matcher: [
+    // sve osim next static/image + favicon
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
 };

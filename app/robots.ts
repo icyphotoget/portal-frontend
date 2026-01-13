@@ -1,7 +1,14 @@
 import type { MetadataRoute } from "next";
 
+function getSiteUrl() {
+  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  return (url && url.startsWith("http"))
+    ? url.replace(/\/+$/, "")
+    : "https://www.fullportlabs.com"; // hard fallback, NIKAD localhost
+}
+
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = getSiteUrl();
 
   return {
     rules: [
@@ -9,8 +16,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         disallow: [
-          "/api/", // if you ever expose Next API routes
-          "/_next/", // framework internals
+          "/api/",
+          "/_next/",
         ],
       },
     ],
