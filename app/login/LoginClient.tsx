@@ -87,16 +87,7 @@ export default function LoginClient() {
                 {busy ? "Redirecting…" : "Continue with Google"}
               </button>
 
-              {/* X / Twitter */}
-              <button
-                onClick={() => loginWith("twitter")}
-                disabled={busy}
-                className="group w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-200
-                           transition hover:bg-zinc-900 hover:border-zinc-700 hover:scale-[1.01] active:scale-[0.99]
-                           disabled:opacity-60 disabled:hover:scale-100"
-              >
-                {busy ? "Redirecting…" : "Continue with X"}
-              </button>
+           
             </div>
 
             {message ? (
