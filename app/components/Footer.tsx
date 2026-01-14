@@ -23,7 +23,7 @@ export default function Footer() {
            
 
             <a
-              href="https://twitter.com"
+              href="https://x.com/fullportlabs"
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black transition"
@@ -142,7 +142,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="text-sm text-white">
           © {new Date().getFullYear()}{" "}
-          <Link href="https://fullport.com" className="hover:text-cyan-400 transition underline">
+          <Link href="https://fullportlabs.com" className="hover:text-cyan-400 transition underline">
             FULLPORT
           </Link>
           . ALL RIGHTS RESERVED
