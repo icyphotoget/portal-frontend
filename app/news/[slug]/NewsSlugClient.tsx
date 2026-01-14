@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import StrapiBlocks from "@/app/components/StrapiBlocks";
 import Comments from "@/app/components/Comments";
+import RelatedArticles from "@/app/components/RelatedArticles";
 import { createSupabaseBrowser } from "@/app/lib/supabase/client";
 
 type Article = {
@@ -120,6 +121,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
 
   const [article, setArticle] = useState<Article | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarked, setBookmarked] = useState(false);
@@ -130,6 +132,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, [supabase]);
 
+  // Fetch main article
   useEffect(() => {
     if (!slug) return;
 
@@ -175,6 +178,50 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
     };
   }, [slug]);
 
+  // Fetch related articles
+  useEffect(() => {
+    if (!article) return;
+
+    const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+    if (!baseUrl) return;
+
+    const category = getArticleCategory(article);
+    const categoryId = category?.id;
+
+    // Build URL to fetch related articles
+    let url = `${baseUrl}/api/articles?sort=publishedAt:desc&populate=coverImage&populate=category&pagination[pageSize]=4&filters[slug][$ne]=${encodeURIComponent(article.slug)}`;
+
+    // If article has category, filter by same category
+    if (categoryId) {
+      url += `&filters[category][id][$eq]=${categoryId}`;
+    }
+
+    let alive = true;
+
+    fetch(url, { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) return;
+        return r.json();
+      })
+      .then((json) => {
+        if (!alive || !json?.data) return;
+
+        const articles = json.data
+          .map((entity: any) => flattenArticleEntity(entity))
+          .filter(Boolean) as Article[];
+
+        setRelatedArticles(articles.slice(0, 3));
+      })
+      .catch((e) => {
+        console.error("Related articles error:", e);
+        setRelatedArticles([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [article]);
+
   const category = article ? getArticleCategory(article) : null;
 
   const coverUrl = useMemo(() => {
@@ -186,6 +233,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
   const authorInitial = authorName.charAt(0).toUpperCase();
   const authorBio = "Covering crypto news, memecoins, and on-chain stories.";
 
+  // Bookmark check
   useEffect(() => {
     if (!userId || !slug) {
       setBookmarked(false);
@@ -312,7 +360,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
 
   if (error) {
     return (
-      <main className="mino min-h-screen bg-black text-white">
+      <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-4xl px-4 py-10">
           <Link href="/" className="text-sm text-zinc-400 hover:text-white">
             ← Back
@@ -348,6 +396,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="mx-auto max-w-[680px] px-4 sm:px-6 pt-8 pb-24">
+        {/* Category Pills */}
         <div className="mb-6 flex flex-wrap items-center gap-2">
           {category && (
             <Link
@@ -362,14 +411,17 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
           )}
         </div>
 
+        {/* Title */}
         <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-4">
           {article.title}
         </h1>
 
+        {/* Excerpt */}
         {article.excerpt && (
           <p className="text-xl text-zinc-400 leading-relaxed mb-6 font-medium">{article.excerpt}</p>
         )}
 
+        {/* Author and Date */}
         <div className="flex items-center gap-4 pb-6 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <span className="text-sm">by</span>
@@ -379,6 +431,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
           <div className="text-sm text-zinc-500">{formatDate(article.publishedAt)}</div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex items-center gap-3 py-6 border-b border-zinc-800">
           <button
             onClick={onShare}
@@ -436,16 +489,16 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
                 />
               </svg>
 
-              <span className="font-bold">{commentCount ?? "—"}</span>
+              <span className="font-bold">{commentCount ?? "–"}</span>
               <span className="text-zinc-400">Comments</span>
             </Link>
           </div>
         </div>
 
+        {/* Cover Image */}
         {coverUrl ? (
           <div className="my-8 -mx-4 sm:-mx-6">
             <div className="relative aspect-[16/9] bg-zinc-900 overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={coverUrl}
                 alt={article.title}
@@ -466,6 +519,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
           </div>
         )}
 
+        {/* Author Card */}
         <div className="flex items-start gap-4 py-6 border-b border-zinc-800">
           <div className="relative h-12 w-12 shrink-0">
             <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">
@@ -479,6 +533,7 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
           </div>
         </div>
 
+        {/* Article Content */}
         <article className="prose prose-invert prose-lg max-w-none mt-8">
           <div className="text-zinc-200 leading-relaxed">
             {Array.isArray(article.content) ? (
@@ -489,6 +544,10 @@ export default function NewsSlugClient({ slug }: { slug: string }) {
           </div>
         </article>
 
+        {/* Related Articles */}
+        <RelatedArticles articles={relatedArticles} />
+
+        {/* Comments */}
         <div id="comments" className="mt-16">
           <Comments slug={slug} />
         </div>
