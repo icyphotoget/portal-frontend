@@ -108,7 +108,7 @@ export default async function NewsPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">News</h1>
-            <p className="mt-2 text-sm text-zinc-400">Latest posts from your Strapi newsroom.</p>
+            <p className="mt-2 text-sm text-zinc-400">Latest posts from FullPort.</p>
           </div>
 
           <Link
