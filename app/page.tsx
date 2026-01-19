@@ -13,44 +13,10 @@ import EditorsPickSection from "@/app/components/EditorsPickSection";
 import HowToSection from "@/app/components/HowToSection";
 import Footer from "@/app/components/Footer";
 
-import LiveBar, { type LiveBarItem } from "@/app/components/LiveBar";
+import LiveBarRotator from "@/app/components/LiveBarRotator";
 
 import { fetchHomeData, type Article } from "@/app/lib/strapi";
-
-async function fetchLatestLiveBarItem(baseUrl: string): Promise<LiveBarItem | null> {
-  // ✅ Uvijek traži samo objavljene koji imaju liveUpdate
-  // - publishedAt not null
-  // - liveUpdate not null
-  // - liveUpdate not empty string (best-effort)
-  const url =
-    `${baseUrl}/api/articles?` +
-    `filters[publishedAt][$notNull]=true&` +
-    `filters[liveUpdate][$notNull]=true&` +
-    `sort=publishedAt:desc&pagination[pageSize]=1&` +
-    // ✅ uzmi samo polja koja trebamo (manje payloada + manje edge-caseova)
-    `fields[0]=slug&fields[1]=liveUpdate`;
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-
-  const json = await res.json();
-  const entity = json?.data?.[0];
-  if (!entity) return null;
-
-  // ✅ podrži i v4 (attributes) i v5 (flat)
-  const attrs = entity?.attributes ?? entity;
-
-  const text = (attrs?.liveUpdate as string | undefined)?.trim();
-  const slug = attrs?.slug as string | undefined;
-
-  if (!text) return null;
-
-  return {
-    text,
-    href: slug ? `/news/${slug}` : undefined,
-    label: "LIVE",
-  };
-}
+import { fetchLiveTickerItems } from "@/app/lib/strapiLive";
 
 export default async function HomePage() {
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
@@ -96,8 +62,8 @@ export default async function HomePage() {
   const mostPopular = latest.slice(0, 6);
   const latestFeed = latest.slice(6);
 
-  // ✅ LIVE BAR item (latest published article that has liveUpdate)
-  const liveItem = await fetchLatestLiveBarItem(baseUrl);
+  // ✅ LIVE items (from live-tickers collection type, not articles)
+  const liveItems = await fetchLiveTickerItems(baseUrl, 6);
 
   return (
     <main className="min-h-screen bg-black text-white flex min-h-[100dvh] flex-col">
@@ -115,10 +81,10 @@ export default async function HomePage() {
         {/* 1) HERO */}
         {hero ? <HeroCard hero={hero} /> : null}
 
-        {/* ✅ LIVE BAR between HERO and PUMPFUN (render only if postoji) */}
-        {liveItem ? (
+        {/* ✅ LIVE BAR between HERO and PUMPFUN */}
+        {liveItems.length ? (
           <div className="mb-10">
-            <LiveBar item={liveItem} title="FULLPORT LIVE" />
+            <LiveBarRotator items={liveItems} title="FULLPORT LIVE" intervalMs={6500} />
           </div>
         ) : null}
 
@@ -153,7 +119,7 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 5) EDITOR'S PICK ✅ */}
+        {/* 5) EDITOR'S PICK */}
         <section className="mb-12">
           <EditorsPickSection
             label="EDITOR'S PICK"
