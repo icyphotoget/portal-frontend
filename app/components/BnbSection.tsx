@@ -1,3 +1,4 @@
+// app/components/BnbSection.tsx
 import Link from "next/link";
 import type { Article } from "@/app/lib/strapi";
 import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi";
@@ -5,8 +6,8 @@ import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi"
 export default function BnbSection({
   label = "BNB",
   kicker = "BNB",
-  seeAllHref = "/news",
-  bg = "#FFF1C1", // soft warm yellow
+  seeAllHref = "/news?category=bnb",
+  bg = "#FFF4CC", // soft yellow card
   categorySlug = "bnb",
   articles,
   takeItems = 4,
@@ -57,24 +58,31 @@ export default function BnbSection({
   return (
     <div className="relative">
       <div className="relative mx-auto max-w-[1100px] pr-14 sm:pr-16 lg:pr-20">
+        {/* Vertical label (outside the card) - RIGHT SIDE */}
         <div className="pointer-events-none absolute right-0 top-0 h-full">
           <div className="sticky top-28">
-            <div
-              className={[
-                "select-none",
-                "font-black tracking-tight",
-                "text-[64px] sm:text-[84px] lg:text-[110px]",
-                "leading-none",
-                "[writing-mode:vertical-rl]",
-              ].join(" ")}
-              style={{ color: "rgba(161,98,7,0.22)" }} // subtle amber ink
-            >
-              {label}
+            <div className="relative">
+              <div className="absolute -inset-y-7 -inset-x-4 rounded-2xl bg-black/35 blur-xl" />
+              <div
+                className={[
+                  "relative select-none",
+                  "font-black tracking-tight",
+                  "text-[64px] sm:text-[84px] lg:text-[110px]",
+                  "leading-none",
+                  "[writing-mode:vertical-rl]",
+                  "drop-shadow-[0_12px_30px_rgba(0,0,0,0.55)]",
+                ].join(" ")}
+                style={{ color: "rgba(255,255,255,0.28)" }}
+              >
+                {label}
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Card */}
         <section className="relative overflow-hidden rounded-[22px] text-black" style={{ background: bg }}>
+          {/* Retro paper/grain overlay */}
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-multiply"
             style={{
@@ -92,6 +100,7 @@ export default function BnbSection({
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 via-transparent to-black/10" />
 
+          {/* top row */}
           <div className="relative flex items-center justify-between px-5 sm:px-6 lg:px-8 pt-5">
             <div className="flex items-center gap-3">
               <span className="h-5 w-[3px] rounded-full bg-black/80" />

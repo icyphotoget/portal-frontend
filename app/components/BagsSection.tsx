@@ -1,3 +1,4 @@
+// app/components/BagsSection.tsx
 import Link from "next/link";
 import type { Article } from "@/app/lib/strapi";
 import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi";
@@ -5,8 +6,8 @@ import { firstCoverUrl, formatDate, getArticleCategory } from "@/app/lib/strapi"
 export default function BagsSection({
   label = "BAGS",
   kicker = "BAGS",
-  seeAllHref = "/news",
-  bg = "#E9D8FF", // soft purple
+  seeAllHref = "/news?category=bags",
+  bg = "#E9D8FF", // soft purple card
   categorySlug = "bags",
   articles,
   takeItems = 4,
@@ -60,26 +61,28 @@ export default function BagsSection({
         {/* Vertical label (outside the card) - RIGHT SIDE */}
         <div className="pointer-events-none absolute right-0 top-0 h-full">
           <div className="sticky top-28">
-            <div
-              className={[
-                "select-none",
-                "font-black tracking-tight",
-                "text-[64px] sm:text-[84px] lg:text-[110px]",
-                "leading-none",
-                "[writing-mode:vertical-rl]",
-              ].join(" ")}
-              style={{ color: "rgba(88,28,135,0.28)" }} // subtle purple ink
-            >
-              {label}
+            <div className="relative">
+              {/* glass plate behind text so it pops on black bg */}
+              <div className="absolute -inset-y-7 -inset-x-4 rounded-2xl bg-black/35 blur-xl" />
+              <div
+                className={[
+                  "relative select-none",
+                  "font-black tracking-tight",
+                  "text-[64px] sm:text-[84px] lg:text-[110px]",
+                  "leading-none",
+                  "[writing-mode:vertical-rl]",
+                  "drop-shadow-[0_12px_30px_rgba(0,0,0,0.55)]",
+                ].join(" ")}
+                style={{ color: "rgba(255,255,255,0.28)" }}
+              >
+                {label}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Card */}
-        <section
-          className="relative overflow-hidden rounded-[22px] text-black"
-          style={{ background: bg }}
-        >
+        <section className="relative overflow-hidden rounded-[22px] text-black" style={{ background: bg }}>
           {/* Retro paper/grain overlay */}
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-multiply"
@@ -102,9 +105,7 @@ export default function BagsSection({
           <div className="relative flex items-center justify-between px-5 sm:px-6 lg:px-8 pt-5">
             <div className="flex items-center gap-3">
               <span className="h-5 w-[3px] rounded-full bg-black/80" />
-              <span className="text-xs font-extrabold uppercase tracking-[0.22em]">
-                {kicker}
-              </span>
+              <span className="text-xs font-extrabold uppercase tracking-[0.22em]">{kicker}</span>
             </div>
 
             <Link
