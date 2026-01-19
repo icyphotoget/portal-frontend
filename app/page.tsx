@@ -15,6 +15,10 @@ import Footer from "@/app/components/Footer";
 
 import LiveBarRotator from "@/app/components/LiveBarRotator";
 
+import BagsSection from "@/app/components/BagsSection";
+import BnbSection from "@/app/components/BnbSection";
+import BaseSection from "@/app/components/BaseSection";
+
 import { fetchHomeData, type Article } from "@/app/lib/strapi";
 import { fetchLiveTickerItems } from "@/app/lib/strapiLive";
 
@@ -26,7 +30,8 @@ export default async function HomePage() {
       <main className="min-h-screen bg-black text-white">
         <div className="mx-auto max-w-7xl px-4 py-10">
           <p className="text-zinc-400">
-            Missing <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
+            Missing{" "}
+            <code className="rounded bg-zinc-900 px-1">NEXT_PUBLIC_STRAPI_URL</code>.
           </p>
         </div>
       </main>
@@ -119,7 +124,22 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 5) EDITOR'S PICK */}
+        {/* 5) BAGS */}
+        <section className="mb-12">
+          <BagsSection articles={articles} />
+        </section>
+
+        {/* 6) BNB */}
+        <section className="mb-12">
+          <BnbSection articles={articles} />
+        </section>
+
+        {/* 7) BASE */}
+        <section className="mb-12">
+          <BaseSection articles={articles} />
+        </section>
+
+        {/* 8) EDITOR'S PICK */}
         <section className="mb-12">
           <EditorsPickSection
             label="EDITOR'S PICK"
@@ -129,7 +149,7 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 6) HOW TO */}
+        {/* 9) HOW TO */}
         <section className="mb-12">
           <HowToSection
             label="HOW TO?"
@@ -141,7 +161,7 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* 7) LATEST */}
+        {/* 10) LATEST */}
         <LatestFeed articles={latestFeed} />
       </div>
 
