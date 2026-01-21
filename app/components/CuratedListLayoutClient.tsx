@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CuratedListItem } from "@/app/lib/strapiCurated";
 
 type SortMode = "rank" | "name";
+type Summary = { avg: number | null; count: number };
+type RatingsMap = Record<string, Summary>;
 
 function pill(active: boolean) {
   return [
@@ -32,11 +34,53 @@ function launchpadBadge(lp: string) {
   return `${badgeBase()}`;
 }
 
+function fmt1(n: number) {
+  return (Math.round(n * 10) / 10).toFixed(1);
+}
+
 export default function CuratedListLayoutClient({ items }: { items: CuratedListItem[] }) {
   const [q, setQ] = useState("");
   const [meta, setMeta] = useState<"all" | "meme" | "ai" | "other">("all");
   const [launchpad, setLaunchpad] = useState<"all" | "pumpfun" | "letsbonk" | "bags" | "other">("all");
   const [sort, setSort] = useState<SortMode>("rank");
+
+  // ✅ ratings cache (symbol -> summary)
+  const [ratings, setRatings] = useState<RatingsMap>({});
+
+  useEffect(() => {
+    const symbols = Array.from(
+      new Set(items.map((it) => it.token.symbol?.trim().toUpperCase()).filter(Boolean))
+    );
+
+    if (symbols.length === 0) return;
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const results = await Promise.all(
+          symbols.map(async (sym) => {
+            const res = await fetch(`/api/ratings/summary?symbol=${encodeURIComponent(sym)}`, {
+              cache: "no-store",
+              signal: controller.signal,
+            });
+            if (!res.ok) return [sym, { avg: null, count: 0 }] as const;
+            const json = await res.json();
+            return [sym, { avg: json.avg ?? null, count: json.count ?? 0 }] as const;
+          })
+        );
+
+        const map: RatingsMap = {};
+        for (const [sym, summary] of results) map[sym] = summary;
+
+        setRatings(map);
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => controller.abort();
+  }, [items]);
 
   const filtered = useMemo(() => {
     const base = items.filter((it) => {
@@ -113,55 +157,71 @@ export default function CuratedListLayoutClient({ items }: { items: CuratedListI
 
       {/* Grid */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((it) => (
-          <Link
-            key={it.id}
-            href={`/tokens/${encodeURIComponent(it.token.symbol.toLowerCase())}`}
-            className="group rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4 transition hover:border-zinc-700 hover:bg-zinc-900/40"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="text-sm font-semibold text-zinc-300">#{it.rank}</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={launchpadBadge(it.token.launchpad)}>{it.token.launchpad}</span>
-                <span className={metaBadge(it.token.meta)}>{it.token.meta}</span>
-              </div>
-            </div>
+        {filtered.map((it) => {
+          const sym = it.token.symbol?.trim().toUpperCase();
+          const r = sym ? ratings[sym] : undefined;
+          const showRating = r && r.avg != null && r.count > 0;
 
-            <div className="mt-3 flex items-center gap-3">
-              {it.token.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={it.token.logoUrl}
-                  alt={it.token.name}
-                  className="h-10 w-10 rounded-xl object-cover ring-1 ring-zinc-800"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-xl bg-zinc-800/60" />
-              )}
-
-              <div className="min-w-0">
-                <div className="truncate text-lg font-semibold text-white">
-                  {it.token.name} <span className="text-zinc-400">({it.token.symbol})</span>
-                </div>
-                {it.token.descriptionShort ? (
-                  <div className="mt-1 line-clamp-2 text-sm text-zinc-400">
-                    {it.token.descriptionShort}
+          return (
+            <Link
+              key={it.id}
+              href={`/tokens/${encodeURIComponent(it.token.symbol.toLowerCase())}`}
+              className="group relative rounded-2xl border border-zinc-800 bg-zinc-900/30 p-4 transition hover:border-zinc-700 hover:bg-zinc-900/40"
+            >
+              {/* ✅ Rating pinned bottom-right (more visible) */}
+              {showRating ? (
+                <div className="pointer-events-none absolute bottom-4 right-4">
+                  <div className="flex items-center gap-2 rounded-xl border border-yellow-500/30 bg-black/50 px-3 py-2 text-sm font-semibold text-yellow-200 shadow-[0_0_0_1px_rgba(0,0,0,0.2)]">
+                    <span className="text-base">★</span>
+                    <span>{fmt1(r!.avg as number)}</span>
+                    <span className="text-xs font-normal text-zinc-300">({r!.count})</span>
                   </div>
-                ) : null}
-              </div>
-            </div>
+                </div>
+              ) : null}
 
-            {it.note ? (
-              <div className="mt-3 rounded-xl border border-zinc-800 bg-black/20 p-3 text-sm text-zinc-200">
-                {it.note}
-              </div>
-            ) : null}
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-sm font-semibold text-zinc-300">#{it.rank}</div>
 
-            <div className="mt-3 text-xs text-zinc-500 group-hover:text-zinc-400">
-              Open token →
-            </div>
-          </Link>
-        ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={launchpadBadge(it.token.launchpad)}>{it.token.launchpad}</span>
+                  <span className={metaBadge(it.token.meta)}>{it.token.meta}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3">
+                {it.token.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={it.token.logoUrl}
+                    alt={it.token.name}
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-zinc-800"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-xl bg-zinc-800/60" />
+                )}
+
+                <div className="min-w-0">
+                  <div className="truncate text-lg font-semibold text-white">
+                    {it.token.name} <span className="text-zinc-400">({it.token.symbol})</span>
+                  </div>
+
+                  {it.token.descriptionShort ? (
+                    <div className="mt-1 line-clamp-2 text-sm text-zinc-400">{it.token.descriptionShort}</div>
+                  ) : null}
+                </div>
+              </div>
+
+              {it.note ? (
+                <div className="mt-3 rounded-xl border border-zinc-800 bg-black/20 p-3 text-sm text-zinc-200">
+                  {it.note}
+                </div>
+              ) : null}
+
+              {/* Add bottom padding so rating overlay never covers CTA */}
+              <div className="mt-3 pb-10 text-xs text-zinc-500 group-hover:text-zinc-400">Open token →</div>
+            </Link>
+          );
+        })}
       </section>
     </div>
   );

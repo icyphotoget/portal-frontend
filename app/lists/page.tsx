@@ -9,6 +9,8 @@ import { fetchHomeData } from "@/app/lib/strapi";
 import { fetchCuratedLists } from "@/app/lib/strapiCurated";
 import { getViewer } from "@/app/lib/auth";
 
+const ENABLE_PRICING = process.env.NEXT_PUBLIC_ENABLE_PRICING === "true";
+
 function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded-full border border-zinc-800 bg-black/20 px-2 py-0.5 text-[11px] text-zinc-200">
@@ -35,7 +37,7 @@ export default async function ListsIndexPage() {
   const lists = await fetchCuratedLists(baseUrl);
 
   return (
-    <main className="min-h-screen bg-black text-white flex min-h-[100dvh] flex-col">
+    <main className="min-h-screen bg-black text-white flex flex-col">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-[140px]" />
         <div className="absolute -bottom-56 right-[-160px] h-[560px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[160px]" />
@@ -47,7 +49,7 @@ export default async function ListsIndexPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold">Curated Lists</h1>
           <p className="mt-3 max-w-2xl text-zinc-300">
-            Hand-picked token lists. Some are premium (🔒).
+            Hand-picked token lists.
           </p>
         </div>
 
@@ -66,9 +68,6 @@ export default async function ListsIndexPage() {
                     <div className="truncate text-xl font-semibold text-white">
                       {l.title}
                     </div>
-                    <div className="mt-1 truncate text-sm text-zinc-500">
-                      /lists/{l.slug}
-                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -85,7 +84,8 @@ export default async function ListsIndexPage() {
           })}
         </section>
 
-        {!viewer.isPro ? (
+        {/* 🔒 Pricing Upsell (FEATURE-FLAGGED) */}
+        {ENABLE_PRICING && !viewer.isPro ? (
           <div className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/20 p-6">
             <div className="text-lg font-semibold">Want premium lists?</div>
             <p className="mt-2 text-sm text-zinc-400">
