@@ -48,7 +48,7 @@ export default function PremiumGateClient({
     return (
       <PaywallCard
         title={listTitle}
-        description="This is a premium list. Log in to unlock (MVP), pricing flow next."
+        subtitle="This is a premium list. Log in to unlock (MVP), pricing flow next."
       />
     );
   }
