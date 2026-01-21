@@ -217,7 +217,7 @@ export default function CommunityGuidelinesPage() {
           </div>
 
           <div className="mt-6 text-xs text-zinc-500 leading-relaxed">
-            Last updated: Jan 2026 (update this text whenever you change the policy).
+            Last updated: Jan 2026 
           </div>
         </div>
       </div>
