@@ -15,7 +15,15 @@ export async function getViewer(): Promise<Viewer> {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData?.user ?? null;
 
-  if (!user) return { isLoggedIn: false, userId: null, email: null, isPro: false, proUntil: null };
+  if (!user) {
+    return {
+      isLoggedIn: false,
+      userId: null,
+      email: null,
+      isPro: false,
+      proUntil: null,
+    };
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -24,7 +32,9 @@ export async function getViewer(): Promise<Viewer> {
     .maybeSingle();
 
   const proUntil = profile?.pro_until ?? null;
-  const isProByDate = proUntil ? new Date(proUntil).getTime() > Date.now() : false;
+  const isProByDate = proUntil
+    ? new Date(proUntil).getTime() > Date.now()
+    : false;
 
   return {
     isLoggedIn: true,
@@ -33,4 +43,13 @@ export async function getViewer(): Promise<Viewer> {
     isPro: Boolean(profile?.is_pro) && isProByDate,
     proUntil,
   };
+}
+
+/**
+ * ✅ Helper za client / premium gate
+ * koristi se u premium-gate-client.tsx
+ */
+export async function getIsLoggedIn(): Promise<boolean> {
+  const viewer = await getViewer();
+  return viewer.isLoggedIn;
 }
