@@ -12,9 +12,8 @@ async function grantProAccess(opts: { userId?: string; email?: string; plan?: st
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+// ✅ Fix: don't hardcode apiVersion (your Stripe types expect 2025-12-15.clover)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
@@ -32,9 +31,9 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const userId = (session.metadata?.userId || "")?.trim() || undefined;
+    const userId = (session.metadata?.userId || "").trim() || undefined;
     const email =
-      (session.metadata?.email || "")?.trim() ||
+      (session.metadata?.email || "").trim() ||
       (typeof session.customer_details?.email === "string" ? session.customer_details.email : undefined);
 
     const plan = session.metadata?.plan;
